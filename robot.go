@@ -10,15 +10,15 @@ const LegFrontRight = "front_right"
 const LegBackLeft = "back_left"
 const LegBackRight = "back_right"
 
-// Legs is an extension of a map from string to LegIK that allows for json unmarshalling
-type Legs map[string]LegIK
+// legs is an extension of a map from string to LegIK that allows for json unmarshalling
+type legs map[string]LegIK
 
 // AllLegs is an ordered list of all the legs of a robot, useful for looping
 var AllLegs = []string{LegFrontLeft, LegFrontRight, LegBackLeft, LegBackRight}
 
 // Quadruped is a type to collect four LegIK objects, a motor controller, and some robot info together, to allow easy control
 type Quadruped struct {
-	Legs               Legs            `json:"legs"`
+	Legs               legs            `json:"legs"`
 	MotorController    MotorController `json:"motor_controller"`
 	BodyDimensionX     float64         `json:"body_dimension_x"`
 	BodyDimensionZ     float64         `json:"body_dimension_z"`
@@ -72,6 +72,7 @@ func NewQuadrupedWithExtraMotors(newIK func() LegIK, motorController MotorContro
 	}
 }
 
+// SetExtraMotorNow sets the named motor to a position, without waiting for the next update loop
 func (q *Quadruped) SetExtraMotorNow(motorName string, angle float64) {
 	q.MotorController.SetMotor(motorName, angle)
 }
@@ -102,7 +103,7 @@ func (q *Quadruped) LoadFromFile(filename string) {
 }
 
 // UnmarshalJSON allows unmarshalling into the interface type LegIK
-func (l *Legs) UnmarshalJSON(data []byte) error {
+func (l *legs) UnmarshalJSON(data []byte) error {
 	legs := make(map[string]json.RawMessage)
 	err := json.Unmarshal(data, &legs)
 	if err != nil {
