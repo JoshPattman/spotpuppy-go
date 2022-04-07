@@ -9,8 +9,11 @@ import (
 const DefaultPiUsbPort = "/dev/ttyUSB0"
 
 type ArduinoMpu struct {
-	Port    *serial.Port
-	IsReady bool
+	Port     *serial.Port
+	IsReady  bool
+	InverseR bool
+	InverseP bool
+	FlipRP   bool
 }
 
 func (a *ArduinoMpu) GetRollPitch() (float64, float64) {
@@ -28,6 +31,17 @@ func (a *ArduinoMpu) GetRollPitch() (float64, float64) {
 	p, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
 		panic("Invalid message received from arduino (could not parse float " + parts[1] + ")")
+	}
+	if a.FlipRP {
+		t := r
+		r = p
+		p = t
+	}
+	if a.InverseR {
+		r = -r
+	}
+	if a.InverseP {
+		p = -p
 	}
 	return r, p
 }
