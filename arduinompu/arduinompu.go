@@ -38,6 +38,7 @@ func NewArduinoMpu(portName string) *ArduinoMpu {
 	if err != nil {
 		panic("Failed to connect to arduino on port " + portName)
 	}
+	s.Write([]byte{'r'})
 	waitForByte('R', s)
 	return &ArduinoMpu{
 		Port:    s,
