@@ -1,11 +1,16 @@
 package spotpuppy
 
+// MotorController is an interface type to allow setting of positions to named motors
 type MotorController interface {
+	// SetMotor allows setting of a named motor to an angle between -90 to 90
 	SetMotor(string, float64)
+	// CreateServoMapping is for initialising any servo mapping that is stored with all possible motor names
 	CreateServoMapping([]string)
+	// Setup is called once the motor controller has a servo mapping set up and has been loaded from a file
 	Setup()
 }
 
+// DummyMotorController is a basic MotorController
 type DummyMotorController struct {
 	Mapping map[string]int
 }
