@@ -54,3 +54,10 @@ func (v *Vector3) Inv() *Vector3 {
 	vn.Z *= -1
 	return vn
 }
+
+var DirDown = Vector3{0, 1, 0}
+var DirUp = DirDown.Inv()
+var DirForward = Vector3{1, 0, 0}
+var DirBackward = DirForward.Inv()
+var DirLeft = Vector3{0, 0, 1}
+var DirRight = DirLeft.Inv()

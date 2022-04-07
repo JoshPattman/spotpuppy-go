@@ -11,6 +11,10 @@ func (o *RollPitchCoordinateSystem) TransformDirection(v *Vector3) *Vector3 {
 	return NewVector3(v3r.X, v3r.Y, v3r.Z)
 }
 
+func (o *RollPitchCoordinateSystem) TD(v *Vector3) *Vector3 {
+	return o.TransformDirection(v)
+}
+
 func (o *RollPitchCoordinateSystem) SetRollPitch(roll, pitch float64) {
 	dtor := 3.14159 / 180.0
 	o.Rotation = quaternion.FromEuler(dtor*roll, 0, dtor*pitch)

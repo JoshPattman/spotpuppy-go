@@ -26,8 +26,8 @@ type Quadruped struct {
 	cachedLegRotations map[string][]float64
 }
 
-// GetVectorToShoulder gets the Vector3 between the robots center and the shoulder joint of the leg specified
-func (q *Quadruped) GetVectorToShoulder(leg string) *Vector3 {
+// ShoulderVec gets the Vector3 between the robots center and the shoulder joint of the leg specified
+func (q *Quadruped) ShoulderVec(leg string) *Vector3 {
 	switch leg {
 	case LegFrontLeft:
 		return NewVector3(q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
