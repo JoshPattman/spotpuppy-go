@@ -40,3 +40,6 @@ func (d *DummyRotationSensor) GetRollPitch() (float64, float64) {
 func (d *DummyRotationSensor) Calibrate() {
 
 }
+func NewDummyRotationSensor() *DummyRotationSensor {
+	return &DummyRotationSensor{}
+}

@@ -82,7 +82,7 @@ func (dm *DirectMotorIK) LoadJson(data []byte) error {
 	return json.Unmarshal(data, dm)
 }
 
-func NewDirectMotorIK() func() LegIK {
+func NewDirectMotorIKGenerator() func() LegIK {
 	return func() LegIK {
 		return &DirectMotorIK{
 			ReverseKneeJoint: false,
