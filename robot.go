@@ -45,6 +45,12 @@ func (q *Quadruped) GetVectorToShoulder(leg string) *Vector3 {
 // NewQuadruped creates a new quadruped from a function to create empty LegIK objects, and a MotorController.
 // No objects in the robot will be set up correctly, and it is recommended that a file load is performed before anything else
 func NewQuadruped(newIK func() LegIK, motorController MotorController) *Quadruped {
+	return NewQuadrupedWithExtraMotors(newIK, motorController, []string{})
+}
+
+// NewQuadrupedWithExtraMotors creates a new quadruped from a function to create empty LegIK objects, and a MotorController. It also adds the specified servo names to the servo map.
+// No objects in the robot will be set up correctly, and it is recommended that a file load is performed before anything else
+func NewQuadrupedWithExtraMotors(newIK func() LegIK, motorController MotorController, extraMotors []string) *Quadruped {
 	iks := make(map[string]LegIK)
 	cachedLegPositions := make(map[string]*Vector3, 4)
 	for _, l := range AllLegs {
@@ -57,13 +63,17 @@ func NewQuadruped(newIK func() LegIK, motorController MotorController) *Quadrupe
 			names = append(names, l+"."+j)
 		}
 	}
-	motorController.CreateServoMapping(names)
+	motorController.CreateServoMapping(append(names, extraMotors...))
 	return &Quadruped{
 		Legs:               iks,
 		MotorController:    motorController,
 		cachedLegPositions: cachedLegPositions,
 		cachedLegRotations: make(map[string][]float64),
 	}
+}
+
+func (q *Quadruped) SetExtraMotorNow(motorName string, angle float64) {
+	q.MotorController.SetMotor(motorName, angle)
 }
 
 // SaveToFile saves this quadruped to a file
