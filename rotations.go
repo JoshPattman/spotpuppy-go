@@ -1,6 +1,9 @@
 package spotpuppy
 
-import "github.com/westphae/quaternion"
+import (
+	"github.com/westphae/quaternion"
+	"time"
+)
 
 func (o *RollPitchCoordinateSystem) TransformDirection(v *Vector3) *Vector3 {
 	v3 := quaternion.Vec3{X: v.X, Y: v.Y, Z: v.Z}
@@ -42,4 +45,54 @@ func (d *DummyRotationSensor) Calibrate() {
 }
 func NewDummyRotationSensor() *DummyRotationSensor {
 	return &DummyRotationSensor{}
+}
+
+type CachedConcurrentRotationSensor struct {
+	R               RotationSensor
+	UPS             float64
+	rCache          float64
+	pCache          float64
+	needToCalibrate bool
+}
+
+func NewCachedConcurrentRotationSensor(r RotationSensor, ups float64) *CachedConcurrentRotationSensor {
+	ccrs := &CachedConcurrentRotationSensor{
+		R:               r,
+		UPS:             ups,
+		rCache:          0,
+		pCache:          0,
+		needToCalibrate: false,
+	}
+	go ccrsUpdateLoop(ccrs)
+	return ccrs
+}
+func (d *CachedConcurrentRotationSensor) GetRollPitch() (float64, float64) {
+	return d.rCache, d.pCache
+}
+func (d *CachedConcurrentRotationSensor) Calibrate() {
+	// Wait until other calibrations have completed
+	for d.needToCalibrate {
+	}
+	// Set the calibration flag
+	d.needToCalibrate = true
+	time.Sleep(time.Millisecond * 10)
+	// Wait for calibration to complete
+	for d.needToCalibrate {
+	}
+}
+
+func ccrsUpdateLoop(ccrs *CachedConcurrentRotationSensor) {
+	lt := time.Now()
+	for true {
+		if ccrs.needToCalibrate {
+			ccrs.R.Calibrate()
+			ccrs.needToCalibrate = false
+		}
+		r, p := ccrs.R.GetRollPitch()
+		ccrs.rCache = r
+		ccrs.pCache = p
+		for time.Since(lt).Seconds() < 1.0/ccrs.UPS {
+		}
+		lt = time.Now()
+	}
 }
