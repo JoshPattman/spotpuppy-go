@@ -46,6 +46,13 @@ func (v *Vector3) Add(v2 *Vector3) *Vector3 {
 	vn.Z += v2.Z
 	return vn
 }
+func (v *Vector3)Sub(v2 *Vector3)*Vector3{
+	vn := CopyVector3(v)
+	vn.X -= v2.X
+	vn.Y -= v2.Y
+	vn.Z -= v2.Z
+	return vn
+}
 
 func (v *Vector3) Inv() *Vector3 {
 	vn := CopyVector3(v)
