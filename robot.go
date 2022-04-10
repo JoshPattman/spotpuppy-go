@@ -63,7 +63,7 @@ func NewQuadrupedWithExtraMotors(newIK func() LegIK, motorController MotorContro
 			names = append(names, l+"."+j)
 		}
 	}
-	motorController.CreateServoMapping(append(names, extraMotors...))
+	motorController.CreateMotorMapping(append(names, extraMotors...))
 	return &Quadruped{
 		Legs:               iks,
 		MotorController:    motorController,

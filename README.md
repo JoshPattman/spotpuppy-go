@@ -1,9 +1,10 @@
-# `spotpuppy-go` - The quadruped control go module
+# `spotpuppy-go` - The quadruped control module for go
 ## What does this module do?
 * Makes coding walking algorithms for quadrupedal robots more readable, yet still gives the programmer enough complexity to create complex programs
-* Makes it easy to use algorithms between mechanically different robots - when creating a robot you have to provide an IK controller. This can easily be changed to allow lots of different leg configurations.
+* Makes it easy to use algorithms between mechanically different robots - when creating a robot you have to provide an IK controller. This can easily be changed to allow lots of different leg configurations. 
 	* This concept also extends to motor controller drivers and rotation sensors. Both of these are interface types and can be switched out for either pre-build ones, or custom implementations.
-* Allows you to work with coordinates, and minimise your interaction with motors/servos and their rotations directly
+* Allows you to work with vectors (such as `up` or `forward`)
+	* This is much more intuitive than bare coordinates, and much more readable tha directly controlling motor rotations
 * Takes care of saving and loading robot configuration to disk - including custom implementations of motor controllers and leg IK drivers
 ## What robots can run this code?
 There are some limitations
@@ -11,13 +12,15 @@ There are some limitations
 * The robot must have four legs, arranged such that there is one at front right, front left, back right, and back left (similar to boston dynamics spot mini, not a spider like quadruped)
 
 Other than these limitations, you can write motor controllers, rotation sensors, and leg ik drivers for basically anything you can think of, and these components will plug into the module with ease.
-## Example Usage Repo
-There is a repo with some example code using this module to make a robot _walk_ here `github.com/joshpattman/spotpuppy-go-example`. Further down this readme there are some basic examples if you just want a brief look.
-## Example Code
-The below code (15 lines!) is all you would need to write to create a robot, then keep its feet at the same points on the floor no matter what rotation the body is at. This particular robot has a `3 servo, one servo in each joint` leg design, a `pca9685` motor driver, and an arduino running arduinodmp code (github.com/joshpattman/TODO).
+## Examples
+There is a repo with some example code using this module to make a robot _walk_ [here](github.com/joshpattman/spotpuppy-go-example).
+## Usage
+The below code (15 lines!) is all you would need to write to create a robot, then keep its feet at the same points on the floor no matter what rotation the body is at. This particular robot has a `3 servo, one servo in each joint` leg design, a `pca9685` motor driver, and an arduino running arduinodmp code (The sketch can be found on the `simple` branch [here](github.com/joshpattman/arduino-mpu6050)).
 ```go
 // Create a quadruped with direct motor IKs and a pca9685 motor controller
 q := sp.NewQuadruped(spotpuppy.NewDirectMotorIKGenerator(), pca9685.NewPCAMotorController())
+// Load its parameters from config file
+q.LoadFromFile("config.json")
 
 // Create a rotation sensor over a serrial connection to an arduino
 mpu := arduinompu.NewArduinoMpu("/dev/ttyUSB0")
@@ -50,6 +53,49 @@ for true {
 	q.Update()
 	// Wait until its time to do the next update
 	ups.WaitForNext()
+}
+```
+## Included types
+### LegIk
+* `DirectMotorIK` - This is an IK driver for a leg with three motors, one at each joint, and joints laid out in the same location as Boston Dynamics Spot Mini (`knee`, `hip_x` (hip forwards and backwards), `hip_z` (hip left and right))
+### MotorController
+* `DummyMotorController` - This does nothing. It is there as a placeholder for performance testing
+* `pca9685/PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
+## Custom type implementations
+### LegIK
+A `LegIK` controller describes a type that takes am input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
+* `(0,0,0)` is the position at the shoulder
+* `(0,1,0)` is 1cm down from the shoulder
+* `(1,0,0)` is 1cm forward from the shoulder
+* `(0,0,1)` is 1cm left from the shoulder
+```go
+type LegIK interface {
+	// This function takes in some coordinates for the foot, and returns a list of motor rotations
+	// There can be as many motors as you want, as long as they are all declared in GetMotorNames()
+	SetEndpoint(vector *Vector3) []float64
+	// This just returns a list of all of the named motors in the leg
+	// For example, the direct mortor ik returns ["hip_x","hip_z","knee"]
+	// The order of these is the same order that the rotations are returned in SetEndpoint()
+	GetMotorNames() []string
+	// This returns the position the foor should be at to have all motors centered
+	GetRestingPosition() *Vector3
+	// Load the json data into this object
+	LoadJson(data []byte) error
+}
+```
+### MotorController
+A motor controller describes a type that can set the positions of named motors to rotations (from -90 to 90)
+> Note on motor mappings: A motor mapping is usually a `map[string]int`, where the key represents a named motor, and the value represents an output channel (eg `servo on pin 8`)
+```go
+type MotorController interface {
+	// Set a named motor to an angle between -90 to 90
+	SetMotor(string, float64)
+	// Create the motor mapping using  a list of all possible motor names
+	// This should set all of the motors to an invalid channel (eg -1)
+	CreateMotorMapping([]string)
+	// This function is called after both CreateServoMapping and loading the motor mapping from disk
+	// This can be used, for example, to create Servo objects for each mmotor in the mapping
+	Setup()
 }
 ```
 ## Differences to spotpuppy python

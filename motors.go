@@ -4,9 +4,9 @@ package spotpuppy
 type MotorController interface {
 	// SetMotor allows setting of a named motor to an angle between -90 to 90
 	SetMotor(string, float64)
-	// CreateServoMapping is for initialising any servo mapping that is stored with all possible motor names
-	CreateServoMapping([]string)
-	// Setup is called once the motor controller has a servo mapping set up and has been loaded from a file
+	// CreateMotorMapping is for initialising any motor mapping that is stored with all possible motor names
+	CreateMotorMapping([]string)
+	// Setup is called once the motor controller has a motor mapping set up and has been loaded from a file
 	Setup()
 }
 
@@ -23,7 +23,7 @@ func (d *DummyMotorController) SetMotor(s string, f float64) {
 	//fmt.Println("Set motor " + s + "(" + strconv.Itoa(d.Mapping[s]) + ") to " + fmt.Sprintf("%f", f))
 }
 
-func (d *DummyMotorController) CreateServoMapping(names []string) {
+func (d *DummyMotorController) CreateMotorMapping(names []string) {
 	d.Mapping = make(map[string]int)
 	for _, n := range names {
 		d.Mapping[n] = -1

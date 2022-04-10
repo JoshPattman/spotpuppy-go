@@ -15,7 +15,7 @@ func (d *PCAMotorController) SetMotor(s string, a float64) {
 	d.servos[s].Angle(int(a + 90))
 }
 
-func (d *PCAMotorController) CreateServoMapping(names []string) {
+func (d *PCAMotorController) CreateMotorMapping(names []string) {
 	d.Mapping = make(map[string]int)
 	for _, n := range names {
 		d.Mapping[n] = -1
