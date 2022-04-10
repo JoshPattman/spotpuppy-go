@@ -60,10 +60,10 @@ for true {
 * `DirectMotorIK` - This is an IK driver for a leg with three motors, one at each joint, and joints laid out in the same location as Boston Dynamics Spot Mini (`knee`, `hip_x` (hip forwards and backwards), `hip_z` (hip left and right))
 ### MotorController
 * `DummyMotorController` - This does nothing. It is there as a placeholder for performance testing
-* `pca9685/PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
+* `PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
 ### RotationSensor
 * `DummyRotationSensor` - This does nothing. It is there as a placeholder for performance testing
-* `arduinompu/ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
+* `ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
 ## Custom type implementations
 ### LegIK
 A `LegIK` controller describes a type that takes am input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
