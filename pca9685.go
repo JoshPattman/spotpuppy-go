@@ -1,4 +1,4 @@
-package pca9685
+package spotpuppy
 
 import (
 	"github.com/googolgl/go-i2c"

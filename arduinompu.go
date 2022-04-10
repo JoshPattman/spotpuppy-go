@@ -1,4 +1,4 @@
-package arduinompu
+package spotpuppy
 
 import (
 	"github.com/tarm/serial"
