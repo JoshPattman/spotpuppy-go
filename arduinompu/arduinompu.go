@@ -8,7 +8,7 @@ import (
 
 const DefaultPiUsbPort = "/dev/ttyUSB0"
 
-type ArduinoMpu struct {
+type ArduinoRotationSensor struct {
 	Port     *serial.Port
 	IsReady  bool
 	InverseR bool
@@ -16,7 +16,7 @@ type ArduinoMpu struct {
 	FlipRP   bool
 }
 
-func (a *ArduinoMpu) GetRollPitch() (float64, float64) {
+func (a *ArduinoRotationSensor) GetRollPitch() (float64, float64) {
 	a.Port.Write([]byte{'d'})
 	waitForByte('D', a.Port)
 	msg := string(readUpTo(';', a.Port))
@@ -46,7 +46,7 @@ func (a *ArduinoMpu) GetRollPitch() (float64, float64) {
 	return r, p
 }
 
-func NewArduinoMpu(portName string) *ArduinoMpu {
+func NewArduinoRotationSensor(portName string) *ArduinoRotationSensor {
 	c := &serial.Config{Name: portName, Baud: 115200}
 	s, err := serial.OpenPort(c)
 	if err != nil {
@@ -54,13 +54,13 @@ func NewArduinoMpu(portName string) *ArduinoMpu {
 	}
 	s.Write([]byte{'r'})
 	waitForByte('R', s)
-	return &ArduinoMpu{
+	return &ArduinoRotationSensor{
 		Port:    s,
 		IsReady: true,
 	}
 }
 
-func (a *ArduinoMpu) Calibrate() {
+func (a *ArduinoRotationSensor) Calibrate() {
 	if !a.IsReady {
 		panic("Rotation sensor wasn't ready")
 	}

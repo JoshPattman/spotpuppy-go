@@ -65,8 +65,8 @@ func NewDummyRotationSensor() *DummyRotationSensor {
 	return &DummyRotationSensor{}
 }
 
-// CachedConcurrentRotationSensor uses a blocking rotation sensor but runs update at a steady rate in a goroutine, allowing for instant rotation accsess
-type CachedConcurrentRotationSensor struct {
+// ConcurrentRotationSensor uses a blocking rotation sensor but runs update at a steady rate in a goroutine, allowing for instant rotation accsess
+type ConcurrentRotationSensor struct {
 	R               RotationSensor
 	UPS             float64
 	rCache          float64
@@ -74,9 +74,9 @@ type CachedConcurrentRotationSensor struct {
 	needToCalibrate bool
 }
 
-// NewCachedConcurrentRotationSensor creates a new ccrs from a rotaion sensor and a number of times to update per second
-func NewCachedConcurrentRotationSensor(r RotationSensor, ups float64) *CachedConcurrentRotationSensor {
-	ccrs := &CachedConcurrentRotationSensor{
+// NewConcurrentRotationSensor creates a new ccrs from a rotaion sensor and a number of times to update per second
+func NewConcurrentRotationSensor(r RotationSensor, ups float64) *ConcurrentRotationSensor {
+	ccrs := &ConcurrentRotationSensor{
 		R:               r,
 		UPS:             ups,
 		rCache:          0,
@@ -88,12 +88,12 @@ func NewCachedConcurrentRotationSensor(r RotationSensor, ups float64) *CachedCon
 }
 
 // GetRollPitch returns the most recently updated roll and pitch for this rotation sensor
-func (d *CachedConcurrentRotationSensor) GetRollPitch() (float64, float64) {
+func (d *ConcurrentRotationSensor) GetRollPitch() (float64, float64) {
 	return d.rCache, d.pCache
 }
 
 // Calibrate calibrates the underlying rotation sensor (after waiting for any updates it is running)
-func (d *CachedConcurrentRotationSensor) Calibrate() {
+func (d *ConcurrentRotationSensor) Calibrate() {
 	// Wait until other calibrations have completed
 	for d.needToCalibrate {
 	}
@@ -105,7 +105,7 @@ func (d *CachedConcurrentRotationSensor) Calibrate() {
 	}
 }
 
-func ccrsUpdateLoop(ccrs *CachedConcurrentRotationSensor) {
+func ccrsUpdateLoop(ccrs *ConcurrentRotationSensor) {
 	lt := time.Now()
 	for true {
 		if ccrs.needToCalibrate {

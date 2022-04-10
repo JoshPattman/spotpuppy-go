@@ -23,7 +23,7 @@ q := sp.NewQuadruped(spotpuppy.NewDirectMotorIKGenerator(), pca9685.NewPCAMotorC
 q.LoadFromFile("config.json")
 
 // Create a rotation sensor over a serrial connection to an arduino
-mpu := arduinompu.NewArduinoMpu("/dev/ttyUSB0")
+mpu := arduinompu.NewArduinoRotationSensor("/dev/ttyUSB0")
 
 // Create a new coordinate system which will be used to represent the floor
 // This is used in code to rotate vectors from robot space to global space
@@ -63,7 +63,7 @@ for true {
 * `pca9685/PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
 ### RotationSensor
 * `DummyRotationSensor` - This does nothing. It is there as a placeholder for performance testing
-* `arduinompu/ArduinoMpu` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
+* `arduinompu/ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
 ## Custom type implementations
 ### LegIK
 A `LegIK` controller describes a type that takes am input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
@@ -107,7 +107,7 @@ A rotation sensor describes a type which can get the roll and pitch of the robot
 type RotationSensor interface {
 	// This returns the roll and pitch, in degrees, of the robot
 	// 0,0 means the robot is flat. This should be blocking.
-	// If concurrency is desired, you can wrap this type in CachedConcurrentRotationSensor
+	// If concurrency is desired, you can wrap this type in ConcurrentRotationSensor
 	GetRollPitch() (float64, float64)
 	// This is called to calibrate the rotation sensor
 	// It should block until calibration is complete
