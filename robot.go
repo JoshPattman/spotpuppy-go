@@ -125,7 +125,7 @@ func (q *Quadruped) SetLegPosition(leg string, pos *Vector3) {
 // Update takes the most recent leg positions (set with SetLegPosition), calculates the motor angles with LegIK, and sets the motors with the MotorController
 func (q *Quadruped) Update() {
 	for _, l := range AllLegs {
-		q.cachedLegRotations[l] = q.Legs[l].SetEndpoint(q.cachedLegPositions[l])
+		q.cachedLegRotations[l] = q.Legs[l].CalculateMotorRotations(q.cachedLegPositions[l])
 	}
 	for _, l := range AllLegs {
 		r := q.cachedLegRotations[l]

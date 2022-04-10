@@ -1,7 +1,7 @@
 # `spotpuppy-go` - The quadruped control module for go
 ## What does this module do?
 * Makes coding walking algorithms for quadrupedal robots more readable, yet still gives the programmer enough complexity to create complex programs
-* Makes it easy to use algorithms between mechanically different robots - when creating a robot you have to provide an IK controller. This can easily be changed to allow lots of different leg configurations. 
+* Makes it easy to use algorithms between mechanically different robots - when creating a robot you have to provide an IK controller. This can easily be changed to allow lots of different leg configurations.
 	* This concept also extends to motor controller drivers and rotation sensors. Both of these are interface types and can be switched out for either pre-build ones, or custom implementations.
 * Allows you to work with vectors (such as `up` or `forward`)
 	* This is much more intuitive than bare coordinates, and much more readable tha directly controlling motor rotations
@@ -75,10 +75,10 @@ A `LegIK` controller describes a type that takes am input `(x,y,z)` in space rel
 type LegIK interface {
 	// This function takes in some coordinates for the foot, and returns a list of motor rotations
 	// There can be as many motors as you want, as long as they are all declared in GetMotorNames()
-	SetEndpoint(vector *Vector3) []float64
+	CalculateMotorRotations(vector *Vector3) []float64
 	// This just returns a list of all of the named motors in the leg
 	// For example, the direct mortor ik returns ["hip_x","hip_z","knee"]
-	// The order of these is the same order that the rotations are returned in SetEndpoint()
+	// The order of these is the same order that the rotations are returned in CalculateMotorRotations()
 	GetMotorNames() []string
 	// This returns the position the foor should be at to have all motors centered
 	GetRestingPosition() *Vector3

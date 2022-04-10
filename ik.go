@@ -7,11 +7,11 @@ import (
 
 // LegIK describes types that can calculate motor rotations from a foot endpoint
 type LegIK interface {
-	// SetEndpoint gets a list of motor rotations from a foot position relative to this leg.
+	// CalculateMotorRotations gets a list of motor rotations from a foot position relative to this leg.
 	// The returned servo positions should be in the same order as GetMotorNames
 	// (ie the first value of the rotations should be for the first servo name returned by GetMotorNames)
-	SetEndpoint(vector *Vector3) []float64
-	// GetMotorNames returns a list of the motor names of this leg. See SetEndpoint for more info
+	CalculateMotorRotations(vector *Vector3) []float64
+	// GetMotorNames returns a list of the motor names of this leg. See CalculateMotorRotations for more info
 	GetMotorNames() []string
 	// GetRestingPosition returns the position of the foot of this leg such that the motor rotations are all 0
 	GetRestingPosition() *Vector3
@@ -33,8 +33,8 @@ type DirectMotorIK struct {
 	BoneLength       float64 `json:"bone_length"`
 }
 
-// SetEndpoint calculates the rotations of the three motors, and returns them in the order (hip left right, hip forwards backwords, knee)
-func (dm *DirectMotorIK) SetEndpoint(pos *Vector3) []float64 {
+// CalculateMotorRotations calculates the rotations of the three motors, and returns them in the order (hip left right, hip forwards backwords, knee)
+func (dm *DirectMotorIK) CalculateMotorRotations(pos *Vector3) []float64 {
 	dist := pos.Dist()
 	if dist >= 2*dm.BoneLength {
 		pos.Mul(1.999 * dm.BoneLength / dist)
