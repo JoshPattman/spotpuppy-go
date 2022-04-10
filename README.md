@@ -61,6 +61,9 @@ for true {
 ### MotorController
 * `DummyMotorController` - This does nothing. It is there as a placeholder for performance testing
 * `pca9685/PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
+### RotationSensor
+* `DummyRotationSensor` - This does nothing. It is there as a placeholder for performance testing
+* `arduinompu/ArduinoMpu` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
 ## Custom type implementations
 ### LegIK
 A `LegIK` controller describes a type that takes am input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
@@ -96,6 +99,19 @@ type MotorController interface {
 	// This function is called after both CreateServoMapping and loading the motor mapping from disk
 	// This can be used, for example, to create Servo objects for each mmotor in the mapping
 	Setup()
+}
+```
+### RotationSensor
+A rotation sensor describes a type which can get the roll and pitch of the robot
+```go
+type RotationSensor interface {
+	// This returns the roll and pitch, in degrees, of the robot
+	// 0,0 means the robot is flat. This should be blocking.
+	// If concurrency is desired, you can wrap this type in CachedConcurrentRotationSensor
+	GetRollPitch() (float64, float64)
+	// This is called to calibrate the rotation sensor
+	// It should block until calibration is complete
+	Calibrate()
 }
 ```
 ## Differences to spotpuppy python
