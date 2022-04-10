@@ -10,7 +10,6 @@ const LegFrontRight = "front_right"
 const LegBackLeft = "back_left"
 const LegBackRight = "back_right"
 
-// legs is an extension of a map from string to LegIK that allows for json unmarshalling
 type legs map[string]LegIK
 
 // AllLegs is an ordered list of all the legs of a robot, useful for looping

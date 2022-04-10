@@ -74,6 +74,7 @@ type CachedConcurrentRotationSensor struct {
 	needToCalibrate bool
 }
 
+// NewCachedConcurrentRotationSensor creates a new ccrs from a rotaion sensor and a number of times to update per second
 func NewCachedConcurrentRotationSensor(r RotationSensor, ups float64) *CachedConcurrentRotationSensor {
 	ccrs := &CachedConcurrentRotationSensor{
 		R:               r,
@@ -85,9 +86,13 @@ func NewCachedConcurrentRotationSensor(r RotationSensor, ups float64) *CachedCon
 	go ccrsUpdateLoop(ccrs)
 	return ccrs
 }
+
+// GetRollPitch returns the most recently updated roll and pitch for this rotation sensor
 func (d *CachedConcurrentRotationSensor) GetRollPitch() (float64, float64) {
 	return d.rCache, d.pCache
 }
+
+// Calibrate calibrates the underlying rotation sensor (after waiting for any updates it is running)
 func (d *CachedConcurrentRotationSensor) Calibrate() {
 	// Wait until other calibrations have completed
 	for d.needToCalibrate {
