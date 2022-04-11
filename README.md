@@ -1,4 +1,5 @@
 # `spotpuppy-go` - The quadruped control module for go
+View the documentation [here](https://pkg.go.dev/github.com/JoshPattman/spotpuppy-go)
 ## What does this module do?
 * Makes coding walking algorithms for quadrupedal robots more readable, yet still gives the programmer enough freedom to create complex programs
 * Makes it easy to use algorithms between mechanically different robots - when creating a robot you have to provide an IK controller. This can easily be changed to allow lots of different leg configurations.
