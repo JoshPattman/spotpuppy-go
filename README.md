@@ -13,9 +13,9 @@ There are some limitations
 
 Other than these limitations, you can write motor controllers, rotation sensors, and leg ik drivers for basically anything you can think of, and these components will plug into the module with ease.
 ## Examples
-There is a repo with some example code using this module to make a robot _walk_ [here](github.com/joshpattman/spotpuppy-go-example).
+There is a repo with some example code using this module to make a robot _walk_ [here](github.com/JoshPattman/spotpuppy-go-example).
 ## Usage
-The below code (15 lines!) is all you would need to write to create a robot, then keep its feet at the same points on the floor no matter what rotation the body is at. This particular robot has a `3 servo, one servo in each joint` leg design, a `pca9685` motor driver, and an arduino running arduinodmp code (The sketch can be found on the `simple` branch [here](github.com/joshpattman/arduino-mpu6050)).
+The below code (15 lines!) is all you would need to write to create a robot, then keep its feet at the same points on the floor no matter what rotation the body is at. This particular robot has a `3 servo, one servo in each joint` leg design, a `pca9685` motor driver, and an arduino running arduinodmp code (The sketch can be found on the `simple` branch [here](github.com/JoshPattman/arduino-mpu6050)).
 ```go
 // Create a quadruped with direct motor IKs and a pca9685 motor controller
 q := sp.NewQuadruped(spotpuppy.NewDirectMotorIKGenerator(), pca9685.NewPCAMotorController())
@@ -63,7 +63,7 @@ for true {
 * `PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
 ### RotationSensor
 * `DummyRotationSensor` - This does nothing. It is there as a placeholder for performance testing
-* `ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
+* `ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/JoshPattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
 * `ConcurrentRotationSensor` - This type takes another rotation sensor and periodically updates it in the background. When requesting the roll and pitch, the most recent values will be returned. This means that your code does not have to wait for a sensor to be read, which can be an expensive operation.
 ## Custom type implementations
 ### LegIK
