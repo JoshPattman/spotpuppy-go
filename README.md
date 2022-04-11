@@ -64,9 +64,10 @@ for true {
 ### RotationSensor
 * `DummyRotationSensor` - This does nothing. It is there as a placeholder for performance testing
 * `ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](github.com/joshpattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
+* `ConcurrentRotationSensor` - This type takes another rotation sensor and periodically updates it in the background. When requesting the roll and pitch, the most recent values will be returned. This means that your code does not have to wait for a sensor to be read, which can be an expensive operation.
 ## Custom type implementations
 ### LegIK
-A `LegIK` controller describes a type that takes am input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
+A `LegIK` controller describes a type that takes an input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
 * `(0,0,0)` is the position at the shoulder
 * `(0,1,0)` is 1cm down from the shoulder
 * `(1,0,0)` is 1cm forward from the shoulder
@@ -119,6 +120,6 @@ You may have noticed that this module shares its name with the `spotpuppy` pytho
 - Lack of a robot type to extend. You will have to write this type from scratch, however i have found that this actually shortens code and increases readability
 - LegIK interface. You can now write custom IK controllers for the legs which allow much easier integration with other leg designs
 - Simpler saving/loading. There is now one config file containing everything, with much more concise json
-- Faster performance. From some (not very in depth tests), i think this package runs at least 50-100 times faster than the other code (this is not necessarily all pythons fault, and is partly due to the other package being bloated)
+- Faster performance. From some (not very in depth) tests, i think this package runs at least 50-100 times faster than the other code (this is not necessarily all pythons fault, and is partly due to the other package being bloated)
 - Concurrent rotation sensors. This module contains a type that wraps a rotation sensor with the ability to update in the background and not block whilst waiting to be read
 - More intuitive leg indexing. In this module, all legs are referred to by their name (a string), not with an index. This makes confusion less likely
