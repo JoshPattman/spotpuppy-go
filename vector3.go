@@ -39,6 +39,14 @@ func (v *Vector3) Mul(f float64) *Vector3 {
 	return vn
 }
 
+func (v *Vector3) MulVec(v2 *Vector3) *Vector3 {
+	vn := CopyVector3(v)
+	vn.X *= v2.X
+	vn.Y *= v2.Y
+	vn.Z *= v2.Z
+	return vn
+}
+
 func (v *Vector3) Add(v2 *Vector3) *Vector3 {
 	vn := CopyVector3(v)
 	vn.X += v2.X
@@ -60,6 +68,11 @@ func (v *Vector3) Inv() *Vector3 {
 	vn.Y *= -1
 	vn.Z *= -1
 	return vn
+}
+
+// In converts this vector to be in a coordinate system. It is sugar for RollPitchCoordinateSystem.TransformDirection(Vector3)
+func (v *Vector3) In(rpc *RollPitchCoordinateSystem) *Vector3{
+	return rpc.TD(v)
 }
 
 var DirDown = Vector3{0, 1, 0}
