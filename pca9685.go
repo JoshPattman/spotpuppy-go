@@ -6,7 +6,7 @@ import (
 )
 
 type PCAMotorController struct {
-	Mapping map[string]int
+	Mapping map[string]int `json:"mapping"`
 	servos  map[string]*pca9685.Servo
 	pca     *pca9685.PCA9685
 }

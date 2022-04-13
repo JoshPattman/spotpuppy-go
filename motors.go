@@ -13,7 +13,7 @@ type MotorController interface {
 
 // DummyMotorController is a basic MotorController. It does include a dummy servo mapping
 type DummyMotorController struct {
-	Mapping map[string]int
+	Mapping map[string]int `json:"mapping"`
 }
 
 // NewDummyMotorController creates a new dummy motor controller
