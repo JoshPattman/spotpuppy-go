@@ -9,6 +9,8 @@ type MotorController interface {
 	// Setup is called once the motor controller has a motor mapping set up and has been loaded from a file.
 	// This could be used, for example, to create a servo object for each item in the mapping
 	Setup()
+	// CalibrateAllJoints is called to calibrate all joint positions. It can block until complete. It is only useful for brushless motors, not servos.
+	CalibrateAllJoints()
 }
 
 // DummyMotorController is a basic MotorController. It does include a dummy servo mapping
@@ -36,5 +38,9 @@ func (d *DummyMotorController) CreateMotorMapping(names []string) {
 
 // Setup does nothing for DummyMotorController
 func (d *DummyMotorController) Setup() {
+
+}
+
+func (d *DummyMotorController) CalibrateAllJoints() {
 
 }

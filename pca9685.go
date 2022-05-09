@@ -29,6 +29,10 @@ func (d *PCAMotorController) Setup() {
 	}
 }
 
+func (d *PCAMotorController) CalibrateAllJoints() {
+	// No calibration is needed as servos always are at the correct position
+}
+
 func NewPCAMotorController() *PCAMotorController {
 	i2c, err := i2c.New(pca9685.Address, "/dev/i2c-1")
 	if err != nil {
