@@ -16,6 +16,7 @@ func NewQuatPure(x, y, z float64) Quat {
 
 // NewQuatEuler returns a Quat corresponding to Euler angles phi, theta, psi
 func NewQuatEuler(phi, theta, psi float64) Quat {
+	phi, theta, psi = phi*math.Pi/180.0, theta*math.Pi/180.0, psi*math.Pi/180.0
 	q := Quat{}
 	q.W = math.Cos(phi/2)*math.Cos(theta/2)*math.Cos(psi/2) +
 		math.Sin(phi/2)*math.Sin(theta/2)*math.Sin(psi/2)
@@ -122,9 +123,9 @@ func (qin Quat) Rotate(vec *Vec3) *Vec3 {
 // Euler returns the Euler angles phi, theta, psi corresponding to a Quat
 func (q Quat) Euler() (float64, float64, float64) {
 	r := q.Unit()
-	phi := math.Atan2(2*(r.W*r.X+r.Y*r.Z), 1-2*(r.X*r.X+r.Y*r.Y))
-	theta := math.Asin(2 * (r.W*r.Y - r.Z*r.X))
-	psi := math.Atan2(2*(r.X*r.Y+r.W*r.Z), 1-2*(r.Y*r.Y+r.Z*r.Z))
+	phi := math.Atan2(2*(r.W*r.X+r.Y*r.Z), 1-2*(r.X*r.X+r.Y*r.Y)) * 180.0 / math.Pi
+	theta := math.Asin(2*(r.W*r.Y-r.Z*r.X)) * 180.0 / math.Pi
+	psi := math.Atan2(2*(r.X*r.Y+r.W*r.Z), 1-2*(r.Y*r.Y+r.Z*r.Z)) * 180.0 / math.Pi
 	return phi, theta, psi
 }
 

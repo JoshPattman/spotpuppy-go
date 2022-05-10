@@ -70,9 +70,18 @@ func (v *Vec3) Inv() *Vec3 {
 	return vn
 }
 
+func (v *Vec3) Dot(v2 *Vec3) float64 {
+	return (v.X * v2.X) + (v.Y * v2.Y) + (v.Z * v2.Z)
+}
+
 // In converts this vector to be in a coordinate system. It is sugar for RollPitchCoordinateSystem.TransformDirection(Vec3)
 func (v *Vec3) In(quat Quat) *Vec3 {
 	return quat.Rotate(v)
+}
+
+func (v *Vec3) AngleTo(v2 *Vec3) float64 {
+	return math.Acos(v.Dot(v2)/(v.Dist()*v2.Dist())) / math.Pi * 180.0
+	//α = arccos[(a · b) / (|a| * |b|)]
 }
 
 var DirDown = Vec3{0, 1, 0}
