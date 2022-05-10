@@ -1,122 +1,147 @@
 package spotpuppy
 
 import (
-	"github.com/westphae/quaternion"
-	"time"
+	"math"
 )
 
-// TransformDirection takes a vector in world space and rotates it so it is in this coordinate system space
-func (o *RollPitchCoordinateSystem) TransformDirection(v *Vector3) *Vector3 {
-	v3 := quaternion.Vec3{X: v.X, Y: v.Y, Z: v.Z}
-	v3r := o.Rotation.RotateVec3(v3)
-	return NewVector3(v3r.X, v3r.Y, v3r.Z)
+// NewQuat returns a new quaternion
+func NewQuat(w, x, y, z float64) Quat {
+	return Quat{W: w, X: x, Y: y, Z: z}
 }
 
-// TD is shorthand for TransformDirection
-func (o *RollPitchCoordinateSystem) TD(v *Vector3) *Vector3 {
-	return o.TransformDirection(v)
+// NewQuatPure returns a new pure quaternion (no scalar part)
+func NewQuatPure(x, y, z float64) Quat {
+	return Quat{X: x, Y: y, Z: z}
 }
 
-// SetRollPitch sets the roll and pitch of this coordinate system
-func (o *RollPitchCoordinateSystem) SetRollPitch(roll, pitch float64) {
-	dtor := 3.14159 / 180.0
-	o.Rotation = quaternion.FromEuler(dtor*roll, 0, dtor*pitch)
+// NewQuatEuler returns a Quat corresponding to Euler angles phi, theta, psi
+func NewQuatEuler(phi, theta, psi float64) Quat {
+	q := Quat{}
+	q.W = math.Cos(phi/2)*math.Cos(theta/2)*math.Cos(psi/2) +
+		math.Sin(phi/2)*math.Sin(theta/2)*math.Sin(psi/2)
+	q.X = math.Sin(phi/2)*math.Cos(theta/2)*math.Cos(psi/2) -
+		math.Cos(phi/2)*math.Sin(theta/2)*math.Sin(psi/2)
+	q.Y = math.Cos(phi/2)*math.Sin(theta/2)*math.Cos(psi/2) +
+		math.Sin(phi/2)*math.Cos(theta/2)*math.Sin(psi/2)
+	q.Z = math.Cos(phi/2)*math.Cos(theta/2)*math.Sin(psi/2) -
+		math.Sin(phi/2)*math.Sin(theta/2)*math.Cos(psi/2)
+	return q
 }
 
-// UpdateRollPitchFrom gets the roll and pitch from a rotation sensor and copies it into this
-func (o *RollPitchCoordinateSystem) UpdateRollPitchFrom(rs RotationSensor) {
-	r, p := rs.GetRollPitch()
-	o.SetRollPitch(r, p)
+func NewQuatRollPitch(roll, pitch float64) Quat {
+	return NewQuatEuler(roll, 0, pitch)
 }
 
-// RollPitchCoordinateSystem is a way to easily use roll and pitch to rotate directions
-type RollPitchCoordinateSystem struct {
-	Rotation quaternion.Quaternion
+// Quat represents a quaternion W+X*i+Y*j+Z*k
+type Quat struct {
+	W float64 // Scalar component
+	X float64 // i component
+	Y float64 // j component
+	Z float64 // k component
 }
 
-// NewRollPitchCoordinateSystem creates a new system with 0 roll and pitch
-func NewRollPitchCoordinateSystem() *RollPitchCoordinateSystem {
-	rpc := &RollPitchCoordinateSystem{}
-	rpc.SetRollPitch(0, 0)
-	return rpc
+// Conj returns the conjugate of a Quat (W,X,Y,Z) -> (W,-X,-Y,-Z)
+func (qin Quat) Conj() Quat {
+	qin.X = -qin.X
+	qin.Y = -qin.Y
+	qin.Z = -qin.Z
+	return qin
 }
 
-// RotationSensor is an interface for getting the roll and pitch from a gyroscope/accelerometer
-type RotationSensor interface {
-	GetRollPitch() (float64, float64)
-	Calibrate()
+// Norm2 returns the L2-Norm of a Quat (W,X,Y,Z) -> W*W+X*X+Y*Y+Z*Z
+func (qin Quat) Norm2() float64 {
+	return qin.W*qin.W + qin.X*qin.X + qin.Y*qin.Y + qin.Z*qin.Z
 }
 
-// DummyRotationSensor is a rotation sensor that does nothing
-type DummyRotationSensor struct{}
-
-// GetRollPitch returns 0, 0 for DummyRotationSensor
-func (d *DummyRotationSensor) GetRollPitch() (float64, float64) {
-	return 0, 0
+// Neg returns the negative
+func (qin Quat) Neg() Quat {
+	qin.W = -qin.W
+	qin.X = -qin.X
+	qin.Y = -qin.Y
+	qin.Z = -qin.Z
+	return qin
 }
 
-// Calibrate does nothing for DummyRotationSensor
-func (d *DummyRotationSensor) Calibrate() {
-
+// Norm returns the L1-Norm of a Quat (W,X,Y,Z) -> Sqrt(W*W+X*X+Y*Y+Z*Z)
+func (qin Quat) Norm() float64 {
+	return math.Sqrt(qin.Norm2())
 }
 
-// NewDummyRotationSensor creates a new DummyRotationSensor
-func NewDummyRotationSensor() *DummyRotationSensor {
-	return &DummyRotationSensor{}
+// Scalar returns a scalar-only Quat representation of a float (W,0,0,0)
+func Scalar(w float64) Quat {
+	return Quat{W: w}
 }
 
-// ConcurrentRotationSensor uses a blocking rotation sensor but runs update at a steady rate in a goroutine, allowing for instant rotation accsess
-type ConcurrentRotationSensor struct {
-	R               RotationSensor
-	UPS             float64
-	rCache          float64
-	pCache          float64
-	needToCalibrate bool
-}
-
-// NewConcurrentRotationSensor creates a new ccrs from a rotaion sensor and a number of times to update per second
-func NewConcurrentRotationSensor(r RotationSensor, ups float64) *ConcurrentRotationSensor {
-	ccrs := &ConcurrentRotationSensor{
-		R:               r,
-		UPS:             ups,
-		rCache:          0,
-		pCache:          0,
-		needToCalibrate: false,
+// Sum returns the vector sum of any number of Quaternions
+func Sum(qin ...Quat) Quat {
+	qout := Quat{}
+	for _, q := range qin {
+		qout.W += q.W
+		qout.X += q.X
+		qout.Y += q.Y
+		qout.Z += q.Z
 	}
-	go ccrsUpdateLoop(ccrs)
-	return ccrs
+	return qout
 }
 
-// GetRollPitch returns the most recently updated roll and pitch for this rotation sensor
-func (d *ConcurrentRotationSensor) GetRollPitch() (float64, float64) {
-	return d.rCache, d.pCache
+// Prod returns the non-commutative product of any number of Quaternions
+func Prod(qin ...Quat) Quat {
+	qout := Quat{1, 0, 0, 0}
+	var w, x, y, z float64
+	for _, q := range qin {
+		w = qout.W*q.W - qout.X*q.X - qout.Y*q.Y - qout.Z*q.Z
+		x = qout.W*q.X + qout.X*q.W + qout.Y*q.Z - qout.Z*q.Y
+		y = qout.W*q.Y + qout.Y*q.W + qout.Z*q.X - qout.X*q.Z
+		z = qout.W*q.Z + qout.Z*q.W + qout.X*q.Y - qout.Y*q.X
+		qout = Quat{w, x, y, z}
+	}
+	return qout
 }
 
-// Calibrate calibrates the underlying rotation sensor (after waiting for any updates it is running)
-func (d *ConcurrentRotationSensor) Calibrate() {
-	// Wait until other calibrations have completed
-	for d.needToCalibrate {
-	}
-	// Set the calibration flag
-	d.needToCalibrate = true
-	time.Sleep(time.Millisecond * 10)
-	// Wait for calibration to complete
-	for d.needToCalibrate {
-	}
+// Unit returns the Quat rescaled to unit-L1-norm
+func (qin Quat) Unit() Quat {
+	k := qin.Norm()
+	return Quat{qin.W / k, qin.X / k, qin.Y / k, qin.Z / k}
 }
 
-func ccrsUpdateLoop(ccrs *ConcurrentRotationSensor) {
-	lt := time.Now()
-	for true {
-		if ccrs.needToCalibrate {
-			ccrs.R.Calibrate()
-			ccrs.needToCalibrate = false
-		}
-		r, p := ccrs.R.GetRollPitch()
-		ccrs.rCache = r
-		ccrs.pCache = p
-		for time.Since(lt).Seconds() < 1.0/ccrs.UPS {
-		}
-		lt = time.Now()
-	}
+// Inv returns the Quat conjugate rescaled so that Q Q* = 1
+func (qin Quat) Inv() Quat {
+	k2 := qin.Norm2()
+	q := qin.Conj()
+	return Quat{q.W / k2, q.X / k2, q.Y / k2, q.Z / k2}
+}
+
+// Rotate returns the vector rotated by the quaternion.
+func (qin Quat) Rotate(vec *Vec3) *Vec3 {
+	conj := qin.Conj()
+	aug := Quat{0, vec.X, vec.Y, vec.Z}
+	rot := Prod(qin, aug, conj)
+	return &Vec3{rot.X, rot.Y, rot.Z}
+}
+
+// Euler returns the Euler angles phi, theta, psi corresponding to a Quat
+func (q Quat) Euler() (float64, float64, float64) {
+	r := q.Unit()
+	phi := math.Atan2(2*(r.W*r.X+r.Y*r.Z), 1-2*(r.X*r.X+r.Y*r.Y))
+	theta := math.Asin(2 * (r.W*r.Y - r.Z*r.X))
+	psi := math.Atan2(2*(r.X*r.Y+r.W*r.Z), 1-2*(r.Y*r.Y+r.Z*r.Z))
+	return phi, theta, psi
+}
+
+// RotMat returns the rotation matrix (as float array) corresponding to a Quat
+func (qin Quat) RotMat() [3][3]float64 {
+	q := qin.Unit()
+	m := [3][3]float64{}
+	m[0][0] = 1 - 2*(q.Y*q.Y+q.Z*q.Z)
+	m[0][1] = 2 * (q.X*q.Y - q.W*q.Z)
+	m[0][2] = 2 * (q.W*q.Y + q.X*q.Z)
+
+	m[1][1] = 1 - 2*(q.Z*q.Z+q.X*q.X)
+	m[1][2] = 2 * (q.Y*q.Z - q.W*q.X)
+	m[1][0] = 2 * (q.W*q.Z + q.Y*q.X)
+
+	m[2][2] = 1 - 2*(q.X*q.X+q.Y*q.Y)
+	m[2][0] = 2 * (q.Z*q.X - q.W*q.Y)
+	m[2][1] = 2 * (q.W*q.X + q.Z*q.Y)
+	return m
 }
