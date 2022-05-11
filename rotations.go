@@ -30,7 +30,29 @@ func NewQuatEuler(phi, theta, psi float64) Quat {
 }
 
 func NewQuatRollPitch(roll, pitch float64) Quat {
-	return NewQuatEuler(roll, 0, pitch)
+	pitchRot := NewQuatAngleAxis(DirLeft, pitch)
+	rollRot := NewQuatAngleAxis(DirForward, pitch)
+	q := NewQuat(1, 0, 0, 0)
+	// Rotate roll in world space
+	q = rollRot.Prod(q)
+	// Rotate pitch in world space
+	q = pitchRot.Prod(q)
+	return q
+}
+
+func NewQuatAngleAxis(v Vec3, a float64) Quat {
+	// Here we calculate the sin( theta / 2) once for optimization
+	factor := math.Sin(a * (math.Pi / 180.0) / 2.0)
+
+	// Calculate the x, y and z of the quaternion
+	x := v.X * factor
+	y := v.Y * factor
+	z := v.Z * factor
+
+	// Calculate the w value by cos( theta / 2 )
+	w := math.Cos(a * (math.Pi / 180.0) / 2.0)
+
+	return NewQuat(x, y, z, w).Unit()
 }
 
 // Quat represents a quaternion W+X*i+Y*j+Z*k
@@ -68,12 +90,7 @@ func (qin Quat) Norm() float64 {
 	return math.Sqrt(qin.Norm2())
 }
 
-// Scalar returns a scalar-only Quat representation of a float (W,0,0,0)
-func Scalar(w float64) Quat {
-	return Quat{W: w}
-}
-
-// Sum returns the vector sum of any number of Quaternions
+/*// Sum returns the vector sum of any number of Quaternions
 func Sum(qin ...Quat) Quat {
 	qout := Quat{}
 	for _, q := range qin {
@@ -83,10 +100,10 @@ func Sum(qin ...Quat) Quat {
 		qout.Z += q.Z
 	}
 	return qout
-}
+}*/
 
 // Prod returns the non-commutative product of any number of Quaternions
-func Prod(qin ...Quat) Quat {
+func QuatProd(qin ...Quat) Quat {
 	qout := Quat{1, 0, 0, 0}
 	var w, x, y, z float64
 	for _, q := range qin {
@@ -97,6 +114,14 @@ func Prod(qin ...Quat) Quat {
 		qout = Quat{w, x, y, z}
 	}
 	return qout
+}
+func (q Quat) Prod(q2 Quat) Quat {
+	return Quat{
+		q.W*q2.W - q.X*q2.X - q.Y*q2.Y - q.Z*q2.Z,
+		q.W*q2.X + q.X*q2.W + q.Y*q2.Z - q.Z*q2.Y,
+		q.W*q2.Y + q.Y*q2.W + q.Z*q2.X - q.X*q2.Z,
+		q.W*q2.Z + q.Z*q2.W + q.X*q2.Y - q.Y*q2.X,
+	}
 }
 
 // Unit returns the Quat rescaled to unit-L1-norm
@@ -116,7 +141,7 @@ func (qin Quat) Inv() Quat {
 func (qin Quat) Rotate(vec *Vec3) *Vec3 {
 	conj := qin.Conj()
 	aug := Quat{0, vec.X, vec.Y, vec.Z}
-	rot := Prod(qin, aug, conj)
+	rot := QuatProd(qin, aug, conj)
 	return &Vec3{rot.X, rot.Y, rot.Z}
 }
 
@@ -145,4 +170,17 @@ func (qin Quat) RotMat() [3][3]float64 {
 	m[2][0] = 2 * (q.Z*q.X - q.W*q.Y)
 	m[2][1] = 2 * (q.W*q.X + q.Z*q.Y)
 	return m
+}
+
+func (q Quat) GetRollPitch() (float64, float64) {
+	localFwd := q.Rotate(&DirForward)
+	localLft := q.Rotate(&DirLeft)
+	// Global up will always point up in global space
+	globalUp := DirUp
+	// Global left will always have zero y component but will be at right angle to global forward
+	globalLft := globalUp.Cross(localFwd)
+	// Global forward is the vector going forward in the same direction as local forward but with zero pitch
+	globalFwd := globalUp.Cross(globalLft)
+
+	return localLft.AngleTo(globalLft), localFwd.AngleTo(globalFwd)
 }
