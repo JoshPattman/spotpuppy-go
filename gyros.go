@@ -2,7 +2,10 @@ package spotpuppy
 
 // RotationSensor is an interface for getting the roll and pitch from a gyroscope/accelerometer
 type RotationSensor interface {
+	// GetQuaternion returns the quaternion rotation in global space of this sensor.
+	// It can also have y axis rotation, which can be cancelled out easily later to get roll and pitch.
 	GetQuaternion() Quat
+	// Calibrate tells the rotation sensor to calibrate, then waits for the action to complete
 	Calibrate()
 }
 

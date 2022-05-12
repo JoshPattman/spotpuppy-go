@@ -1,6 +1,9 @@
 package spotpuppy
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 var DirDown = Vec3{0, 1, 0}
 var DirUp = DirDown.Inv()
@@ -88,13 +91,13 @@ func (v Vec3) Cross(v2 Vec3) *Vec3 {
 	}
 }
 
-// In converts this vector to be in a coordinate system. It is sugar for RollPitchCoordinateSystem.TransformDirection(Vec3)
-func (v Vec3) In(quat Quat) Vec3 {
-	return quat.Apply(v)
+// Rotated rotates vector v by quaternion q
+func (v Vec3) Rotated(q Quat) Vec3 {
+	return q.Apply(v)
 }
 
 func (v Vec3) AngleTo(v2 Vec3) float64 {
-	return math.Acos(v.Dot(v2)/(v.Len()*v2.Len())) / math.Pi * 180.0
+	return Degrees(math.Acos(v.Dot(v2) / (v.Len() * v2.Len())))
 	//α = arccos[(a · b) / (|a| * |b|)]
 }
 
@@ -102,4 +105,15 @@ func (v Vec3) ProjectToPlane(normal Vec3) Vec3 {
 	d := v.Dot(normal) / normal.Len()
 	p := normal.Unit().Mul(d)
 	return v.Sub(p)
+}
+
+func (v Vec3) String() string {
+	return fmt.Sprintf("(x%.2f,y%.2f,z%.2f)", v.X, v.Y, v.Z)
+}
+
+func Degrees(x float64) float64 {
+	return x * 180.0 / math.Pi
+}
+func Radians(x float64) float64 {
+	return x * math.Pi / 180.0
 }

@@ -15,7 +15,7 @@ func NewQuat(w, x, y, z float64) Quat {
 // NewQuatAngleAxis returns a quaternion with rotation a in degrees around axis v
 func NewQuatAngleAxis(v Vec3, a float64) Quat {
 	v = v.Unit()
-	rads := a * (math.Pi / 180.0)
+	rads := Radians(a)
 	// Here we calculate the sin( theta / 2) once for optimization
 	factor := math.Sin(rads / 2.0)
 
@@ -119,17 +119,21 @@ func (a Quat) RotateByGlobal(b Quat) Quat {
 	return b.Prod(a)
 }
 
+// NoYaw removes the global yaw component of this quaternion.
 func (q Quat) NoYaw() Quat {
 	transformedFwd := q.Apply(DirForward)
 	projected := transformedFwd.ProjectToPlane(DirUp)
 	if projected.Len() > 0 {
-		theta := math.Acos(projected.Unit().Dot(DirForward)) * 180.0 / 3.14159
-		fmt.Println(theta)
+		theta := Degrees(math.Acos(projected.Unit().Dot(DirForward)))
 		yawQuat := NewQuatAngleAxis(DirUp, theta)
 		return q.RotateByGlobal(yawQuat.Inv()).Unit()
 	}
 	// Otherwise, the quaternion is pointing straight up, so just return it
 	return q
+}
+
+func (q Quat) String() string {
+	return fmt.Sprintf("(w%.2f,x%.2f,y%.2f,z%.2f)", q.W, q.X, q.Y, q.Z)
 }
 
 /*
