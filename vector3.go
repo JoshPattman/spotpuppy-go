@@ -30,11 +30,11 @@ func CopyVector3(v Vec3) Vec3 {
 	}
 }
 
-func (v Vec3) Normalise() Vec3 {
-	return v.Mul(1.0 / v.Dist())
+func (v Vec3) Unit() Vec3 {
+	return v.Mul(1.0 / v.Len())
 }
 
-func (v Vec3) Dist() float64 {
+func (v Vec3) Len() float64 {
 	return math.Sqrt((v.X * v.X) + (v.Y * v.Y) + (v.Z * v.Z))
 }
 
@@ -90,16 +90,16 @@ func (v Vec3) Cross(v2 Vec3) *Vec3 {
 
 // In converts this vector to be in a coordinate system. It is sugar for RollPitchCoordinateSystem.TransformDirection(Vec3)
 func (v Vec3) In(quat Quat) Vec3 {
-	return quat.Rotate(v)
+	return quat.Apply(v)
 }
 
 func (v Vec3) AngleTo(v2 Vec3) float64 {
-	return math.Acos(v.Dot(v2)/(v.Dist()*v2.Dist())) / math.Pi * 180.0
+	return math.Acos(v.Dot(v2)/(v.Len()*v2.Len())) / math.Pi * 180.0
 	//α = arccos[(a · b) / (|a| * |b|)]
 }
 
 func (v Vec3) ProjectToPlane(normal Vec3) Vec3 {
-	d := v.Dot(normal) / normal.Dist()
-	p := normal.Normalise().Mul(d)
+	d := v.Dot(normal) / normal.Len()
+	p := normal.Unit().Mul(d)
 	return v.Sub(p)
 }

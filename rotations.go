@@ -1,6 +1,7 @@
 package spotpuppy
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -13,7 +14,7 @@ func NewQuat(w, x, y, z float64) Quat {
 
 // NewQuatAngleAxis returns a quaternion with rotation a in degrees around axis v
 func NewQuatAngleAxis(v Vec3, a float64) Quat {
-	v = v.Normalise()
+	v = v.Unit()
 	rads := a * (math.Pi / 180.0)
 	// Here we calculate the sin( theta / 2) once for optimization
 	factor := math.Sin(rads / 2.0)
@@ -100,8 +101,8 @@ func (qin Quat) Inv() Quat {
 	return Quat{q.W / k2, q.X / k2, q.Y / k2, q.Z / k2}
 }
 
-// Rotate returns the vector rotated by the quaternion.
-func (qin Quat) Rotate(vec Vec3) Vec3 {
+// Apply returns the vector rotated by the quaternion.
+func (qin Quat) Apply(vec Vec3) Vec3 {
 	conj := qin.Conj()
 	aug := Quat{0, vec.X, vec.Y, vec.Z}
 	rot := quatProd(qin, aug, conj)
@@ -116,6 +117,19 @@ func (a Quat) RotateByLocal(b Quat) Quat {
 // RotateByGlobal rotates quaternion a by b along the global axis
 func (a Quat) RotateByGlobal(b Quat) Quat {
 	return b.Prod(a)
+}
+
+func (q Quat) NoYaw() Quat {
+	transformedFwd := q.Apply(DirForward)
+	projected := transformedFwd.ProjectToPlane(DirUp)
+	if projected.Len() > 0 {
+		theta := math.Acos(projected.Unit().Dot(DirForward)) * 180.0 / 3.14159
+		fmt.Println(theta)
+		yawQuat := NewQuatAngleAxis(DirUp, theta)
+		return q.RotateByGlobal(yawQuat.Inv()).Unit()
+	}
+	// Otherwise, the quaternion is pointing straight up, so just return it
+	return q
 }
 
 /*

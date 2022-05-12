@@ -35,7 +35,7 @@ type DirectMotorIK struct {
 
 // CalculateMotorRotations calculates the rotations of the three motors, and returns them in the order (hip left right, hip forwards backwords, knee)
 func (dm *DirectMotorIK) CalculateMotorRotations(pos Vec3) []float64 {
-	dist := pos.Dist()
+	dist := pos.Len()
 	if dist >= 2*dm.BoneLength {
 		pos.Mul(1.999 * dm.BoneLength / dist)
 	}
