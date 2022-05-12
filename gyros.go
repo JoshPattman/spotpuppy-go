@@ -1,19 +1,17 @@
 package spotpuppy
 
-import "time"
-
 // RotationSensor is an interface for getting the roll and pitch from a gyroscope/accelerometer
 type RotationSensor interface {
-	GetRollPitch() (float64, float64)
+	GetQuaternion() Quat
 	Calibrate()
 }
 
 // DummyRotationSensor is a rotation sensor that does nothing
 type DummyRotationSensor struct{}
 
-// GetRollPitch returns 0, 0 for DummyRotationSensor
-func (d *DummyRotationSensor) GetRollPitch() (float64, float64) {
-	return 0, 0
+// GetQuaternion returns identity for DummyRotationSensor
+func (d *DummyRotationSensor) GetQuaternion() Quat {
+	return QuatIdentity
 }
 
 // Calibrate does nothing for DummyRotationSensor
@@ -26,6 +24,7 @@ func NewDummyRotationSensor() *DummyRotationSensor {
 	return &DummyRotationSensor{}
 }
 
+/*
 // ConcurrentRotationSensor uses a blocking rotation sensor but runs update at a steady rate in a goroutine, allowing for instant rotation accsess
 type ConcurrentRotationSensor struct {
 	R               RotationSensor
@@ -81,3 +80,4 @@ func ccrsUpdateLoop(ccrs *ConcurrentRotationSensor) {
 		lt = time.Now()
 	}
 }
+*/

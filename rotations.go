@@ -25,7 +25,7 @@ func NewQuatRollPitch(roll, pitch float64) Quat {
 }*/
 
 func NewQuatAngleAxis(v Vec3, a float64) Quat {
-	v = *v.Normalise()
+	v = v.Normalise()
 	rads := a * (math.Pi / 180.0)
 	// Here we calculate the sin( theta / 2) once for optimization
 	factor := math.Sin(rads / 2.0)
@@ -113,11 +113,11 @@ func (qin Quat) Inv() Quat {
 }
 
 // Rotate returns the vector rotated by the quaternion.
-func (qin Quat) Rotate(vec *Vec3) *Vec3 {
+func (qin Quat) Rotate(vec Vec3) Vec3 {
 	conj := qin.Conj()
 	aug := Quat{0, vec.X, vec.Y, vec.Z}
 	rot := quatProd(qin, aug, conj)
-	return &Vec3{rot.X, rot.Y, rot.Z}
+	return Vec3{rot.X, rot.Y, rot.Z}
 }
 
 /*
