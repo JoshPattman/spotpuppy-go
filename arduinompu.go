@@ -1,9 +1,10 @@
 package spotpuppy
 
 import (
-	"github.com/tarm/serial"
 	"strconv"
 	"strings"
+
+	"github.com/tarm/serial"
 )
 
 const DefaultPiUsbPort = "/dev/ttyUSB0"
@@ -44,6 +45,10 @@ func (a *ArduinoRotationSensor) GetRollPitch() (float64, float64) {
 		p = -p
 	}
 	return r, p
+}
+
+func (a *ArduinoRotationSensor) GetQuaternion() Quat {
+	return QuatIdentity
 }
 
 func NewArduinoRotationSensor(portName string) *ArduinoRotationSensor {

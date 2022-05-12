@@ -91,6 +91,13 @@ func (v Vec3) AngleTo(v2 Vec3) float64 {
 	//α = arccos[(a · b) / (|a| * |b|)]
 }
 
+
+
+def project_onto_plane(x, n):
+    d = dot_product(x, n) / norm(n)
+    p = [d * normalize(n)[i] for i in range(len(n))]
+    return [x[i] - p[i] for i in range(len(x))]
+
 var DirDown = Vec3{0, 1, 0}
 var DirUp = DirDown.Inv()
 var DirForward = Vec3{1, 0, 0}
