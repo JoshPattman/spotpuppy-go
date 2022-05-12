@@ -11,19 +11,7 @@ func NewQuat(w, x, y, z float64) Quat {
 	return Quat{W: w, X: x, Y: y, Z: z}
 }
 
-/*
-func NewQuatRollPitchHeading(roll, pitch, heading float64) Quat {
-	pitchRot := NewQuatAngleAxis(DirLeft, pitch)
-	rollRot := NewQuatAngleAxis(DirForward, roll)
-	headingRot := NewQuatAngleAxis(DirUp, heading)
-	// roll then pitch
-	return headingRot.Prod(rollRot.Prod(pitchRot))
-}
-
-func NewQuatRollPitch(roll, pitch float64) Quat {
-	return NewQuatRollPitchHeading(roll, pitch, 0)
-}*/
-
+// NewQuatAngleAxis returns a quaternion with rotation a in degrees around axis v
 func NewQuatAngleAxis(v Vec3, a float64) Quat {
 	v = v.Normalise()
 	rads := a * (math.Pi / 180.0)
@@ -76,7 +64,6 @@ func (qin Quat) Norm() float64 {
 	return math.Sqrt(qin.Norm2())
 }
 
-// Prod returns the non-commutative product of any number of Quaternions
 func quatProd(qin ...Quat) Quat {
 	qout := Quat{1, 0, 0, 0}
 	var w, x, y, z float64
@@ -90,6 +77,7 @@ func quatProd(qin ...Quat) Quat {
 	return qout
 }
 
+// Prod returns the product of q and q2 (q*q2)
 func (q Quat) Prod(q2 Quat) Quat {
 	return Quat{
 		q.W*q2.W - q.X*q2.X - q.Y*q2.Y - q.Z*q2.Z,
@@ -120,27 +108,17 @@ func (qin Quat) Rotate(vec Vec3) Vec3 {
 	return Vec3{rot.X, rot.Y, rot.Z}
 }
 
+// RotateByGlobal rotates quaternion a by b along the local axis relative to a
 func (a Quat) RotateByLocal(b Quat) Quat {
 	return a.Prod(b)
 }
 
+// RotateByGlobal rotates quaternion a by b along the global axis
 func (a Quat) RotateByGlobal(b Quat) Quat {
 	return b.Prod(a)
 }
 
 /*
-func (q Quat) GetRollPitch() (float64, float64) {
-	localFwd := q.Rotate(&DirForward)
-	localLft := q.Rotate(&DirLeft)
-	// Global up will always point up in global space
-	globalUp := DirUp
-	// Global left will always have zero y component but will be at right angle to global forward
-	globalLft := globalUp.Cross(localFwd)
-	// Global forward is the vector going forward in the same direction as local forward but with zero pitch
-	//globalFwd := globalUp.Cross(globalLft)
-	return localLft.AngleTo(globalLft), localFwd.AngleTo(&DirForward)
-}
-*/
 // Euler returns the Euler angles phi, theta, psi corresponding to a Quaternion
 func (q Quat) Euler() (float64, float64, float64) {
 	r := q.Unit()
@@ -163,3 +141,4 @@ func FromEuler(phi, theta, psi float64) Quat {
 		math.Sin(phi/2)*math.Sin(theta/2)*math.Cos(psi/2)
 	return q
 }
+*/

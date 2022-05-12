@@ -2,6 +2,13 @@ package spotpuppy
 
 import "math"
 
+var DirDown = Vec3{0, 1, 0}
+var DirUp = DirDown.Inv()
+var DirForward = Vec3{1, 0, 0}
+var DirBackward = DirForward.Inv()
+var DirLeft = Vec3{0, 0, 1}
+var DirRight = DirLeft.Inv()
+
 type Vec3 struct {
 	X float64
 	Y float64
@@ -96,10 +103,3 @@ func (v Vec3) ProjectToPlane(normal Vec3) Vec3 {
 	p := normal.Normalise().Mul(d)
 	return v.Sub(p)
 }
-
-var DirDown = Vec3{0, 1, 0}
-var DirUp = DirDown.Inv()
-var DirForward = Vec3{1, 0, 0}
-var DirBackward = DirForward.Inv()
-var DirLeft = Vec3{0, 0, 1}
-var DirRight = DirLeft.Inv()
