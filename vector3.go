@@ -91,12 +91,11 @@ func (v Vec3) AngleTo(v2 Vec3) float64 {
 	//α = arccos[(a · b) / (|a| * |b|)]
 }
 
-
-
-def project_onto_plane(x, n):
-    d = dot_product(x, n) / norm(n)
-    p = [d * normalize(n)[i] for i in range(len(n))]
-    return [x[i] - p[i] for i in range(len(x))]
+func (v Vec3) ProjectToPlane(normal Vec3) Vec3 {
+	d := v.Dot(normal) / normal.Dist()
+	p := normal.Normalise().Mul(d)
+	return v.Sub(p)
+}
 
 var DirDown = Vec3{0, 1, 0}
 var DirUp = DirDown.Inv()
