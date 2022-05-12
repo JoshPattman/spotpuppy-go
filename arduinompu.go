@@ -48,7 +48,30 @@ func (a *ArduinoRotationSensor) GetRollPitch() (float64, float64) {
 }
 
 func (a *ArduinoRotationSensor) GetQuaternion() Quat {
-	return QuatIdentity
+	a.Port.Write([]byte{'q'})
+	waitForByte('Q', a.Port)
+	msg := string(readUpTo(';', a.Port))
+	parts := strings.Split(msg, ",")
+	if len(parts) != 4 {
+		panic("Invalid message received from arduino (not in format 'Q%f,%f,%f,%f;')")
+	}
+	w, err := strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[0] + ")")
+	}
+	x, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[1] + ")")
+	}
+	y, err := strconv.ParseFloat(parts[2], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[2] + ")")
+	}
+	z, err := strconv.ParseFloat(parts[3], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[3] + ")")
+	}
+	return NewQuat(w, x, y, z)
 }
 
 func NewArduinoRotationSensor(portName string) *ArduinoRotationSensor {
