@@ -120,6 +120,7 @@ func (a Quat) RotateByGlobal(b Quat) Quat {
 }
 
 // NoYaw removes the global yaw component of this quaternion.
+// Use this to take a quaternion in global space and make it useful for robot calculations
 func (q Quat) NoYaw() Quat {
 	transformedFwd := q.Apply(DirForward)
 	projected := transformedFwd.ProjectToPlane(DirUp)
@@ -132,6 +133,7 @@ func (q Quat) NoYaw() Quat {
 	return q
 }
 
+// String converts this quaternion to a string
 func (q Quat) String() string {
 	return fmt.Sprintf("(w%.2f,x%.2f,y%.2f,z%.2f)", q.W, q.X, q.Y, q.Z)
 }
@@ -171,7 +173,8 @@ func (q Quat) flipAxis(a Axes) Quat {
 	return QuatIdentity
 }
 
-// RemapAxes takes a quaternion with axes x1, y1, z1 and remaps it to coordinate system where x1 y1 and z1 are the x y and z axes
+// RemapAxes takes a quaternion with axes x1, y1, z1 and remaps it to coordinate system where x1 y1 and z1 are the x y and z axes respectively.
+// For instance, to switch the x and z axes, and negate the y axis, call Quat.RemapAxesFrom(AxZ, -AxY, AxX)
 func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
 	changes := 0
 	if x1 < 0 {
