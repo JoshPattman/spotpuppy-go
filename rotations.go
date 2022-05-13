@@ -230,8 +230,8 @@ func parseAxes(ax string) Axes {
 func ParseAxesRemap(ar AxesRemap) []Axes {
 	ax := make([]Axes, 3)
 	ax[0] = parseAxes(ar.X)
-	ax[2] = parseAxes(ar.Y)
-	ax[3] = parseAxes(ar.Z)
+	ax[1] = parseAxes(ar.Y)
+	ax[2] = parseAxes(ar.Z)
 	return ax
 }
 
