@@ -136,6 +136,66 @@ func (q Quat) String() string {
 	return fmt.Sprintf("(w%.2f,x%.2f,y%.2f,z%.2f)", q.W, q.X, q.Y, q.Z)
 }
 
+type Axes int
+
+const (
+	AxX Axes = 1
+	AxY Axes = 2
+	AxZ Axes = 3
+)
+
+func (q Quat) getAxis(a Axes) float64 {
+	switch a {
+	case AxX:
+		return q.X
+	case AxY:
+		return q.Y
+	case AxZ:
+		return q.Z
+	}
+	return 0
+}
+
+func (q Quat) flipAxis(a Axes) Quat {
+	switch a {
+	case AxX:
+		q.X = -q.X
+		return q
+	case AxY:
+		q.Y = -q.Y
+		return q
+	case AxZ:
+		q.Z = -q.Z
+		return q
+	}
+	return QuatIdentity
+}
+
+// RemapAxes takes a quaternion with axes x1, y1, z1 and remaps it to coordinate system where x1 y1 and z1 are the x y and z axes
+func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
+	changes := 0
+	if x1 < 0 {
+		x1 = -x1
+		q = q.flipAxis(x1)
+		changes++
+	}
+	if y1 < 0 {
+		y1 = -y1
+		q = q.flipAxis(y1)
+		changes++
+	}
+	if z1 < 0 {
+		z1 = -z1
+		q = q.flipAxis(z1)
+		changes++
+	}
+	q2 := Quat{q.W, q.getAxis(x1), q.getAxis(y1), q.getAxis(z1)}
+	if changes%2 != 0 {
+		q2 = q2.Conj()
+	}
+	return q2
+}
+
 /*
 // Euler returns the Euler angles phi, theta, psi corresponding to a Quaternion
 func (q Quat) Euler() (float64, float64, float64) {
