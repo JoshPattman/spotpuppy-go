@@ -196,6 +196,45 @@ func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
 	return q2
 }
 
+type AxesRemap struct {
+	X string `json:"x"`
+	Y string `json:"y"`
+	Z string `json:"z"`
+}
+
+func parseAxes(ax string) Axes {
+	sign := ""
+	if len(ax) == 2 {
+		sign = ax[0:1]
+		ax = ax[1:]
+	}
+	if len(ax) != 1 {
+		panic("Cannot parse axes, not in correct format")
+	}
+	signInt := Axes(1)
+	if sign == "-" {
+		signInt = -1
+	}
+	switch ax {
+	case "x":
+		return AxX * signInt
+	case "y":
+		return AxY * signInt
+	case "z":
+		return AxZ * signInt
+	}
+	panic("Cannot parse axes, not in correct format")
+}
+
+// ParseAxesRemap parses an AxesRemap struct to a list of axes for use with qauternion remapping. each field is in the form "x" (positive x) "-y" (negative y)
+func ParseAxesRemap(ar AxesRemap) []Axes {
+	ax := make([]Axes, 3)
+	ax[0] = parseAxes(ar.X)
+	ax[2] = parseAxes(ar.Y)
+	ax[3] = parseAxes(ar.Z)
+	return ax
+}
+
 /*
 // Euler returns the Euler angles phi, theta, psi corresponding to a Quaternion
 func (q Quat) Euler() (float64, float64, float64) {
