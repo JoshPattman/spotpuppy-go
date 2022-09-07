@@ -1,19 +1,19 @@
 package spotpuppy
 
 import (
-	"github.com/tarm/serial"
 	"strconv"
 	"strings"
+
+	"github.com/tarm/serial"
 )
 
 const DefaultPiUsbPort = "/dev/ttyUSB0"
 
 type ArduinoRotationSensor struct {
-	Port     *serial.Port
-	IsReady  bool
-	InverseR bool
-	InverseP bool
-	FlipRP   bool
+	Port       *serial.Port `json:"port"`
+	IsReady    bool         `json:"-"`
+	Axes       AxesRemap    `json:"axes_remap"`
+	parsedAxes []Axes
 }
 
 func (a *ArduinoRotationSensor) GetRollPitch() (float64, float64) {
@@ -32,21 +32,37 @@ func (a *ArduinoRotationSensor) GetRollPitch() (float64, float64) {
 	if err != nil {
 		panic("Invalid message received from arduino (could not parse float " + parts[1] + ")")
 	}
-	if a.FlipRP {
-		t := r
-		r = p
-		p = t
-	}
-	if a.InverseR {
-		r = -r
-	}
-	if a.InverseP {
-		p = -p
-	}
 	return r, p
 }
 
-func NewArduinoRotationSensor(portName string) *ArduinoRotationSensor {
+func (a *ArduinoRotationSensor) GetQuaternion() Quat {
+	a.Port.Write([]byte{'q'})
+	waitForByte('Q', a.Port)
+	msg := string(readUpTo(';', a.Port))
+	parts := strings.Split(msg, ",")
+	if len(parts) != 4 {
+		panic("Invalid message received from arduino (not in format 'Q%f,%f,%f,%f;')")
+	}
+	w, err := strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[0] + ")")
+	}
+	x, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[1] + ")")
+	}
+	y, err := strconv.ParseFloat(parts[2], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[2] + ")")
+	}
+	z, err := strconv.ParseFloat(parts[3], 64)
+	if err != nil {
+		panic("Invalid message received from arduino (could not parse float " + parts[3] + ")")
+	}
+	return NewQuat(w, x, y, z).RemapAxesFrom(a.parsedAxes[0], a.parsedAxes[1], a.parsedAxes[2])
+}
+
+func NewArduinoRotationSensor(portName string, remap AxesRemap) *ArduinoRotationSensor {
 	c := &serial.Config{Name: portName, Baud: 115200}
 	s, err := serial.OpenPort(c)
 	if err != nil {
@@ -54,9 +70,12 @@ func NewArduinoRotationSensor(portName string) *ArduinoRotationSensor {
 	}
 	s.Write([]byte{'r'})
 	waitForByte('R', s)
+	p := ParseAxesRemap(remap)
 	return &ArduinoRotationSensor{
-		Port:    s,
-		IsReady: true,
+		Port:       s,
+		IsReady:    true,
+		Axes:       remap,
+		parsedAxes: p,
 	}
 }
 
@@ -71,7 +90,7 @@ func (a *ArduinoRotationSensor) Calibrate() {
 }
 
 func waitForByte(b byte, port *serial.Port) {
-	for true {
+	for {
 		buf := make([]byte, 1)
 		port.Read(buf)
 		if buf[0] == b {

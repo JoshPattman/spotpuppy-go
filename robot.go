@@ -21,12 +21,12 @@ type Quadruped struct {
 	MotorController    MotorController `json:"motor_controller"`
 	BodyDimensionX     float64         `json:"body_dimension_x"`
 	BodyDimensionZ     float64         `json:"body_dimension_z"`
-	cachedLegPositions map[string]*Vector3
+	cachedLegPositions map[string]Vec3
 	cachedLegRotations map[string][]float64
 }
 
-// ShoulderVec gets the Vector3 between the robots center and the shoulder joint of the leg specified
-func (q *Quadruped) ShoulderVec(leg string) *Vector3 {
+// ShoulderVec gets the Vec3 between the robots center and the shoulder joint of the leg specified
+func (q *Quadruped) ShoulderVec(leg string) Vec3 {
 	switch leg {
 	case LegFrontLeft:
 		return NewVector3(q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
@@ -51,7 +51,7 @@ func NewQuadruped(newIK func() LegIK, motorController MotorController) *Quadrupe
 // No objects in the robot will be set up correctly, and it is recommended that a file load is performed before anything else
 func NewQuadrupedWithExtraMotors(newIK func() LegIK, motorController MotorController, extraMotors []string) *Quadruped {
 	iks := make(map[string]LegIK)
-	cachedLegPositions := make(map[string]*Vector3, 4)
+	cachedLegPositions := make(map[string]Vec3, 4)
 	for _, l := range AllLegs {
 		iks[l] = newIK()
 		cachedLegPositions[l] = iks[l].GetRestingPosition()
@@ -77,28 +77,30 @@ func (q *Quadruped) SetExtraMotorNow(motorName string, angle float64) {
 }
 
 // SaveToFile saves this quadruped to a file
-func (q *Quadruped) SaveToFile(filename string) {
+func (q *Quadruped) SaveToFile(filename string) error {
 	s, err := json.MarshalIndent(q, "", "\t")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = os.WriteFile(filename, s, 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // LoadFromFile loads some quadruped data from a file. It is important to make sure the quadruped that created that file had the same LegIK and MotorController types
-func (q *Quadruped) LoadFromFile(filename string) {
+func (q *Quadruped) LoadFromFile(filename string) error {
 	s, err := os.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = json.Unmarshal(s, q)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	q.MotorController.Setup()
+	return nil
 }
 
 // UnmarshalJSON allows unmarshalling into the interface type LegIK
@@ -118,7 +120,7 @@ func (l *legs) UnmarshalJSON(data []byte) error {
 }
 
 // SetLegPosition sets a legs position for the next update call. It does not perform any calculations or movement immediately.
-func (q *Quadruped) SetLegPosition(leg string, pos *Vector3) {
+func (q *Quadruped) SetLegPosition(leg string, pos Vec3) {
 	q.cachedLegPositions[leg] = pos
 }
 

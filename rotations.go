@@ -1,122 +1,264 @@
 package spotpuppy
 
 import (
-	"github.com/westphae/quaternion"
-	"time"
+	"fmt"
+	"math"
 )
 
-// TransformDirection takes a vector in world space and rotates it so it is in this coordinate system space
-func (o *RollPitchCoordinateSystem) TransformDirection(v *Vector3) *Vector3 {
-	v3 := quaternion.Vec3{X: v.X, Y: v.Y, Z: v.Z}
-	v3r := o.Rotation.RotateVec3(v3)
-	return NewVector3(v3r.X, v3r.Y, v3r.Z)
+var QuatIdentity = NewQuat(1, 0, 0, 0)
+
+// NewQuat returns a new quaternion
+func NewQuat(w, x, y, z float64) Quat {
+	return Quat{W: w, X: x, Y: y, Z: z}
 }
 
-// TD is shorthand for TransformDirection
-func (o *RollPitchCoordinateSystem) TD(v *Vector3) *Vector3 {
-	return o.TransformDirection(v)
+// NewQuatAngleAxis returns a quaternion with rotation a in degrees around axis v
+func NewQuatAngleAxis(v Vec3, a float64) Quat {
+	v = v.Unit()
+	rads := Radians(a)
+	// Here we calculate the sin( theta / 2) once for optimization
+	factor := math.Sin(rads / 2.0)
+
+	// Calculate the x, y and z of the quaternion
+	x := v.X * factor
+	y := v.Y * factor
+	z := v.Z * factor
+
+	// Calculate the w value by cos( theta / 2 )
+	w := math.Cos(rads / 2.0)
+
+	return NewQuat(w, x, y, z).Unit()
 }
 
-// SetRollPitch sets the roll and pitch of this coordinate system
-func (o *RollPitchCoordinateSystem) SetRollPitch(roll, pitch float64) {
-	dtor := 3.14159 / 180.0
-	o.Rotation = quaternion.FromEuler(dtor*roll, 0, dtor*pitch)
+// Quat represents a quaternion W+X*i+Y*j+Z*k
+type Quat struct {
+	W float64 // Scalar component
+	X float64 // i component
+	Y float64 // j component
+	Z float64 // k component
 }
 
-// UpdateRollPitchFrom gets the roll and pitch from a rotation sensor and copies it into this
-func (o *RollPitchCoordinateSystem) UpdateRollPitchFrom(rs RotationSensor) {
-	r, p := rs.GetRollPitch()
-	o.SetRollPitch(r, p)
+// Conj returns the conjugate of a Quat (W,X,Y,Z) -> (W,-X,-Y,-Z)
+func (qin Quat) Conj() Quat {
+	qin.X = -qin.X
+	qin.Y = -qin.Y
+	qin.Z = -qin.Z
+	return qin
 }
 
-// RollPitchCoordinateSystem is a way to easily use roll and pitch to rotate directions
-type RollPitchCoordinateSystem struct {
-	Rotation quaternion.Quaternion
+// Norm2 returns the L2-Norm of a Quat (W,X,Y,Z) -> W*W+X*X+Y*Y+Z*Z
+func (qin Quat) Norm2() float64 {
+	return qin.W*qin.W + qin.X*qin.X + qin.Y*qin.Y + qin.Z*qin.Z
 }
 
-// NewRollPitchCoordinateSystem creates a new system with 0 roll and pitch
-func NewRollPitchCoordinateSystem() *RollPitchCoordinateSystem {
-	rpc := &RollPitchCoordinateSystem{}
-	rpc.SetRollPitch(0, 0)
-	return rpc
+// Neg returns the negative
+func (qin Quat) Neg() Quat {
+	qin.W = -qin.W
+	qin.X = -qin.X
+	qin.Y = -qin.Y
+	qin.Z = -qin.Z
+	return qin
 }
 
-// RotationSensor is an interface for getting the roll and pitch from a gyroscope/accelerometer
-type RotationSensor interface {
-	GetRollPitch() (float64, float64)
-	Calibrate()
+// Norm returns the L1-Norm of a Quat (W,X,Y,Z) -> Sqrt(W*W+X*X+Y*Y+Z*Z)
+func (qin Quat) Norm() float64 {
+	return math.Sqrt(qin.Norm2())
 }
 
-// DummyRotationSensor is a rotation sensor that does nothing
-type DummyRotationSensor struct{}
-
-// GetRollPitch returns 0, 0 for DummyRotationSensor
-func (d *DummyRotationSensor) GetRollPitch() (float64, float64) {
-	return 0, 0
-}
-
-// Calibrate does nothing for DummyRotationSensor
-func (d *DummyRotationSensor) Calibrate() {
-
-}
-
-// NewDummyRotationSensor creates a new DummyRotationSensor
-func NewDummyRotationSensor() *DummyRotationSensor {
-	return &DummyRotationSensor{}
-}
-
-// ConcurrentRotationSensor uses a blocking rotation sensor but runs update at a steady rate in a goroutine, allowing for instant rotation accsess
-type ConcurrentRotationSensor struct {
-	R               RotationSensor
-	UPS             float64
-	rCache          float64
-	pCache          float64
-	needToCalibrate bool
-}
-
-// NewConcurrentRotationSensor creates a new ccrs from a rotaion sensor and a number of times to update per second
-func NewConcurrentRotationSensor(r RotationSensor, ups float64) *ConcurrentRotationSensor {
-	ccrs := &ConcurrentRotationSensor{
-		R:               r,
-		UPS:             ups,
-		rCache:          0,
-		pCache:          0,
-		needToCalibrate: false,
+func quatProd(qin ...Quat) Quat {
+	qout := Quat{1, 0, 0, 0}
+	var w, x, y, z float64
+	for _, q := range qin {
+		w = qout.W*q.W - qout.X*q.X - qout.Y*q.Y - qout.Z*q.Z
+		x = qout.W*q.X + qout.X*q.W + qout.Y*q.Z - qout.Z*q.Y
+		y = qout.W*q.Y + qout.Y*q.W + qout.Z*q.X - qout.X*q.Z
+		z = qout.W*q.Z + qout.Z*q.W + qout.X*q.Y - qout.Y*q.X
+		qout = Quat{w, x, y, z}
 	}
-	go ccrsUpdateLoop(ccrs)
-	return ccrs
+	return qout
 }
 
-// GetRollPitch returns the most recently updated roll and pitch for this rotation sensor
-func (d *ConcurrentRotationSensor) GetRollPitch() (float64, float64) {
-	return d.rCache, d.pCache
-}
-
-// Calibrate calibrates the underlying rotation sensor (after waiting for any updates it is running)
-func (d *ConcurrentRotationSensor) Calibrate() {
-	// Wait until other calibrations have completed
-	for d.needToCalibrate {
-	}
-	// Set the calibration flag
-	d.needToCalibrate = true
-	time.Sleep(time.Millisecond * 10)
-	// Wait for calibration to complete
-	for d.needToCalibrate {
+// Prod returns the product of q and q2 (q*q2)
+func (q Quat) Prod(q2 Quat) Quat {
+	return Quat{
+		q.W*q2.W - q.X*q2.X - q.Y*q2.Y - q.Z*q2.Z,
+		q.W*q2.X + q.X*q2.W + q.Y*q2.Z - q.Z*q2.Y,
+		q.W*q2.Y + q.Y*q2.W + q.Z*q2.X - q.X*q2.Z,
+		q.W*q2.Z + q.Z*q2.W + q.X*q2.Y - q.Y*q2.X,
 	}
 }
 
-func ccrsUpdateLoop(ccrs *ConcurrentRotationSensor) {
-	lt := time.Now()
-	for true {
-		if ccrs.needToCalibrate {
-			ccrs.R.Calibrate()
-			ccrs.needToCalibrate = false
-		}
-		r, p := ccrs.R.GetRollPitch()
-		ccrs.rCache = r
-		ccrs.pCache = p
-		for time.Since(lt).Seconds() < 1.0/ccrs.UPS {
-		}
-		lt = time.Now()
-	}
+// Unit returns the Quat rescaled to unit-L1-norm
+func (qin Quat) Unit() Quat {
+	k := qin.Norm()
+	return Quat{qin.W / k, qin.X / k, qin.Y / k, qin.Z / k}
 }
+
+// Inv returns the Quat conjugate rescaled so that Q Q* = 1
+func (qin Quat) Inv() Quat {
+	k2 := qin.Norm2()
+	q := qin.Conj()
+	return Quat{q.W / k2, q.X / k2, q.Y / k2, q.Z / k2}
+}
+
+// Apply returns the vector rotated by the quaternion.
+func (qin Quat) Apply(vec Vec3) Vec3 {
+	conj := qin.Conj()
+	aug := Quat{0, vec.X, vec.Y, vec.Z}
+	rot := quatProd(qin, aug, conj)
+	return Vec3{rot.X, rot.Y, rot.Z}
+}
+
+// RotateByGlobal rotates quaternion a by b along the local axis relative to a
+func (a Quat) RotateByLocal(b Quat) Quat {
+	return a.Prod(b)
+}
+
+// RotateByGlobal rotates quaternion a by b along the global axis
+func (a Quat) RotateByGlobal(b Quat) Quat {
+	return b.Prod(a)
+}
+
+// NoYaw removes the global yaw component of this quaternion.
+// Use this to take a quaternion in global space and make it useful for robot calculations
+func (q Quat) NoYaw() Quat {
+	transformedFwd := q.Apply(DirForward)
+	projected := transformedFwd.ProjectToPlane(DirUp)
+	if projected.Len() > 0 {
+		theta := Degrees(math.Acos(projected.Unit().Dot(DirForward)))
+		yawQuat := NewQuatAngleAxis(DirUp, theta)
+		return q.RotateByGlobal(yawQuat.Inv()).Unit()
+	}
+	// Otherwise, the quaternion is pointing straight up, so just return it
+	return q
+}
+
+// String converts this quaternion to a string
+func (q Quat) String() string {
+	return fmt.Sprintf("(w%.2f,x%.2f,y%.2f,z%.2f)", q.W, q.X, q.Y, q.Z)
+}
+
+type Axes int
+
+const (
+	AxX Axes = 1
+	AxY Axes = 2
+	AxZ Axes = 3
+)
+
+func (q Quat) getAxis(a Axes) float64 {
+	switch a {
+	case AxX:
+		return q.X
+	case AxY:
+		return q.Y
+	case AxZ:
+		return q.Z
+	}
+	return 0
+}
+
+func (q Quat) flipAxis(a Axes) Quat {
+	switch a {
+	case AxX:
+		q.X = -q.X
+		return q
+	case AxY:
+		q.Y = -q.Y
+		return q
+	case AxZ:
+		q.Z = -q.Z
+		return q
+	}
+	return QuatIdentity
+}
+
+// RemapAxes takes a quaternion with axes x1, y1, z1 and remaps it to coordinate system where x1 y1 and z1 are the x y and z axes respectively.
+// For instance, to switch the x and z axes, and negate the y axis, call Quat.RemapAxesFrom(AxZ, -AxY, AxX)
+func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
+	changes := 0
+	if x1 < 0 {
+		x1 = -x1
+		q = q.flipAxis(x1)
+		changes++
+	}
+	if y1 < 0 {
+		y1 = -y1
+		q = q.flipAxis(y1)
+		changes++
+	}
+	if z1 < 0 {
+		z1 = -z1
+		q = q.flipAxis(z1)
+		changes++
+	}
+	q2 := Quat{q.W, q.getAxis(x1), q.getAxis(y1), q.getAxis(z1)}
+	if changes%2 != 0 {
+		q2 = q2.Conj()
+	}
+	return q2
+}
+
+type AxesRemap struct {
+	X string `json:"x"`
+	Y string `json:"y"`
+	Z string `json:"z"`
+}
+
+func parseAxes(ax string) Axes {
+	sign := ""
+	if len(ax) == 2 {
+		sign = ax[0:1]
+		ax = ax[1:]
+	}
+	if len(ax) != 1 {
+		panic("Cannot parse axes, not in correct format")
+	}
+	signInt := Axes(1)
+	if sign == "-" {
+		signInt = -1
+	}
+	switch ax {
+	case "x":
+		return AxX * signInt
+	case "y":
+		return AxY * signInt
+	case "z":
+		return AxZ * signInt
+	}
+	panic("Cannot parse axes, not in correct format")
+}
+
+// ParseAxesRemap parses an AxesRemap struct to a list of axes for use with qauternion remapping. each field is in the form "x" (positive x) "-y" (negative y)
+func ParseAxesRemap(ar AxesRemap) []Axes {
+	ax := make([]Axes, 3)
+	ax[0] = parseAxes(ar.X)
+	ax[1] = parseAxes(ar.Y)
+	ax[2] = parseAxes(ar.Z)
+	return ax
+}
+
+/*
+// Euler returns the Euler angles phi, theta, psi corresponding to a Quaternion
+func (q Quat) Euler() (float64, float64, float64) {
+	r := q.Unit()
+	phi := math.Atan2(2*(r.W*r.X+r.Y*r.Z), 1-2*(r.X*r.X+r.Y*r.Y))
+	theta := math.Asin(2 * (r.W*r.Y - r.Z*r.X))
+	psi := math.Atan2(2*(r.X*r.Y+r.W*r.Z), 1-2*(r.Y*r.Y+r.Z*r.Z))
+	return phi, theta, psi
+}
+
+// FromEuler returns a Quaternion corresponding to Euler angles phi, theta, psi
+func FromEuler(phi, theta, psi float64) Quat {
+	q := Quat{}
+	q.W = math.Cos(phi/2)*math.Cos(theta/2)*math.Cos(psi/2) +
+		math.Sin(phi/2)*math.Sin(theta/2)*math.Sin(psi/2)
+	q.X = math.Sin(phi/2)*math.Cos(theta/2)*math.Cos(psi/2) -
+		math.Cos(phi/2)*math.Sin(theta/2)*math.Sin(psi/2)
+	q.Y = math.Cos(phi/2)*math.Sin(theta/2)*math.Cos(psi/2) +
+		math.Sin(phi/2)*math.Cos(theta/2)*math.Sin(psi/2)
+	q.Z = math.Cos(phi/2)*math.Cos(theta/2)*math.Sin(psi/2) -
+		math.Sin(phi/2)*math.Sin(theta/2)*math.Cos(psi/2)
+	return q
+}
+*/
