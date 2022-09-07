@@ -5,7 +5,7 @@ View the documentation [here](https://pkg.go.dev/github.com/JoshPattman/spotpupp
 * Makes coding walking algorithms for quadrupedal robots more readable, yet still gives the programmer enough freedom to create complex programs
 * Makes it easy to use algorithms between mechanically different robots - when creating a robot you have to provide an IK controller. This can easily be changed to allow lots of different leg configurations.
 	* This concept also extends to motor controller drivers and rotation sensors. Both of these are interface types and can be switched out for either pre-build ones, or custom implementations.
-* Allows you to work with vectors (such as `up` or `forward`)
+* Allows you to work with vectors (such as `up` or `forward`), so you never have to think 'is positive y axis up or down?' or 'is the z axis forward or left?'
 	* This is much more intuitive than xyz coordinates, and much more readable tha directly controlling motor rotations
 * Takes care of saving and loading robot configuration to disk - including custom implementations of motor controllers and leg IK drivers
 ## What robots can run this code?
