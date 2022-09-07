@@ -77,28 +77,30 @@ func (q *Quadruped) SetExtraMotorNow(motorName string, angle float64) {
 }
 
 // SaveToFile saves this quadruped to a file
-func (q *Quadruped) SaveToFile(filename string) {
+func (q *Quadruped) SaveToFile(filename string) error {
 	s, err := json.MarshalIndent(q, "", "\t")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = os.WriteFile(filename, s, 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // LoadFromFile loads some quadruped data from a file. It is important to make sure the quadruped that created that file had the same LegIK and MotorController types
-func (q *Quadruped) LoadFromFile(filename string) {
+func (q *Quadruped) LoadFromFile(filename string) error {
 	s, err := os.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = json.Unmarshal(s, q)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	q.MotorController.Setup()
+	return nil
 }
 
 // UnmarshalJSON allows unmarshalling into the interface type LegIK
