@@ -1,5 +1,7 @@
 package spotpuppy
 
+// Based on github.com/westphae/quaternion
+
 import (
 	"fmt"
 	"math"
