@@ -124,11 +124,11 @@ func (a Quat) RotateByGlobal(b Quat) Quat {
 // NoYaw removes the global yaw component of this quaternion.
 // Use this to take a quaternion in global space and make it useful for robot calculations
 func (q Quat) NoYaw() Quat {
-	transformedFwd := q.Apply(DirForward)
-	projected := transformedFwd.ProjectToPlane(DirUp)
+	transformedFwd := q.Apply(Forward)
+	projected := transformedFwd.ProjectToPlane(Up)
 	if projected.Len() > 0 {
-		theta := Degrees(math.Acos(projected.Unit().Dot(DirForward)))
-		yawQuat := NewQuatAngleAxis(DirUp, theta)
+		theta := Degrees(math.Acos(projected.Unit().Dot(Forward)))
+		yawQuat := NewQuatAngleAxis(Up, theta)
 		return q.RotateByGlobal(yawQuat.Inv()).Unit()
 	}
 	// Otherwise, the quaternion is pointing straight up, so just return it

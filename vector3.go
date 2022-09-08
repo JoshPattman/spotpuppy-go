@@ -5,12 +5,26 @@ import (
 	"math"
 )
 
-var DirDown = Vec3{0, 1, 0}
-var DirUp = DirDown.Inv()
-var DirForward = Vec3{1, 0, 0}
-var DirBackward = DirForward.Inv()
-var DirLeft = Vec3{0, 0, 1}
-var DirRight = DirLeft.Inv()
+// These are for compatibility. Dont use them
+var (
+	DirDown     = Vec3{0, 1, 0}
+	DirUp       = DirDown.Inv()
+	DirForward  = Vec3{1, 0, 0}
+	DirBackward = DirForward.Inv()
+	DirLeft     = Vec3{0, 0, 1}
+	DirRight    = DirLeft.Inv()
+)
+
+// These are what you should use
+var (
+	Down     = DirDown
+	Up       = DirUp
+	Left     = DirLeft
+	Right    = DirRight
+	Forward  = DirForward
+	Backward = DirBackward
+	Zero     = Vec3{0, 0, 0}
+)
 
 type Vec3 struct {
 	X float64
