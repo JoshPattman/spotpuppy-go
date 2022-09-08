@@ -6,9 +6,10 @@ import (
 )
 
 type PCAMotorController struct {
-	Mapping map[string]int `json:"mapping"`
-	servos  map[string]*pca9685.Servo
-	pca     *pca9685.PCA9685
+	ServoOptions *pca9685.ServOptions `json:"servo-options"`
+	Mapping      map[string]int       `json:"mapping"`
+	servos       map[string]*pca9685.Servo
+	pca          *pca9685.PCA9685
 }
 
 func (d *PCAMotorController) SetMotor(s string, a float64) {
@@ -25,7 +26,7 @@ func (d *PCAMotorController) CreateMotorMapping(names []string) {
 func (d *PCAMotorController) Setup() {
 	d.servos = make(map[string]*pca9685.Servo)
 	for k, v := range d.Mapping {
-		d.servos[k] = d.pca.ServoNew(v, nil)
+		d.servos[k] = d.pca.ServoNew(v, d.ServoOptions)
 	}
 }
 
@@ -44,5 +45,10 @@ func NewPCAMotorController() *PCAMotorController {
 	}
 	return &PCAMotorController{
 		pca: pca0,
+		ServoOptions: &pca9685.ServOptions{
+			AcRange:  pca9685.ServoRangeDef,
+			MinPulse: pca9685.ServoMinPulseDef,
+			MaxPulse: pca9685.ServoMaxPulseDef,
+		},
 	}
 }
