@@ -13,7 +13,7 @@ type PCAMotorController struct {
 }
 
 func (d *PCAMotorController) SetMotor(s string, a float64) {
-	d.servos[s].Angle(int(a + 90))
+	d.servos[s].Angle(int(a + float64(d.ServoOptions.AcRange)/2))
 }
 
 func (d *PCAMotorController) CreateMotorMapping(names []string) {
