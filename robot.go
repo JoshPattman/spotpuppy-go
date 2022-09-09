@@ -31,9 +31,9 @@ func (q *Quadruped) ShoulderVec(leg string) Vec3 {
 	case LegFrontLeft:
 		return NewVector3(q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
 	case LegFrontRight:
-		return NewVector3(-q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
-	case LegBackLeft:
 		return NewVector3(q.BodyDimensionX/2, 0, -q.BodyDimensionZ/2)
+	case LegBackLeft:
+		return NewVector3(-q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
 	case LegBackRight:
 		return NewVector3(-q.BodyDimensionX/2, 0, -q.BodyDimensionZ/2)
 	default:
