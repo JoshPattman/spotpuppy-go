@@ -39,9 +39,14 @@ func (dm *DirectMotorIK) CalculateMotorRotations(pos Vec3) []float64 {
 	if dist >= 2*dm.BoneLength {
 		pos.Mul(1.999 * dm.BoneLength / dist)
 	}
-	kd := dm.kneeDegrees(dist) - 90
-	hxd := (kd / 2) + dm.degreesBetween(pos.X, pos.Y) - 135
-	hzd := dm.degreesBetween(pos.Z, pos.Y) - 90
+	// Generate angles
+	kd := dm.kneeDegrees(dist)
+	hxd := (kd / 2) + dm.degreesBetween(pos.X, pos.Y)
+	hzd := dm.degreesBetween(pos.Z, pos.Y)
+	// Make angles centered around 0
+	kd = kd - 90
+	hxd = hxd - 135
+	hzd = hzd - 90
 	if dm.ReverseKneeJoint {
 		kd = -kd
 	}
