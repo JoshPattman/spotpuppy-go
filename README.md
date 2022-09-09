@@ -16,8 +16,8 @@ There are some limitations
 Other than these limitations, you can write motor controllers, rotation sensors, and leg ik drivers for basically anything you can think of, and these components will plug into the module with ease.
 ## Examples
 There is a repo with some example code using this module to make a robot _walk_ [here](https://github.com/JoshPattman/spotpuppy-go-example).
-## Usage
-The below code (15 lines!) is all you would need to write to create a robot, then keep its feet at the same points on the floor no matter what rotation the body is at. This particular robot has a `3 servo, one servo in each joint` leg design, a `pca9685` motor driver, and an arduino running arduinodmp code (The sketch can be found on the `simple` branch [here](https://github.com/JoshPattman/arduino-mpu6050)).
+## Usage - INPORTANT - this code is outdated and will be updated soon, but for now just look at the example repo
+The below code (15 lines!) is all you would need to write to create a robot, then keep its feet at the same points on the floor no matter what rotation the body is at. This particular robot has a `3 servo, one servo in each joint` leg design, a `pca9685` motor driver, and an arduino running arduinodmp code.
 ```go
 // Create a quadruped with direct motor IKs and a pca9685 motor controller
 q := sp.NewQuadruped(spotpuppy.NewDirectMotorIKGenerator(), pca9685.NewPCAMotorController())
@@ -65,8 +65,8 @@ for true {
 * `PCAMotorController` - This is a motor controller designed to interface with the pca9685 servo controller. Tested only on rpi4
 ### RotationSensor
 * `DummyRotationSensor` - This does nothing. It is there as a placeholder for performance testing
-* `ArduinoRotationSensor` - This connects to an arduino over serial that is running `simple` branch of [this](https://github.com/JoshPattman/arduino-mpu6050) repo. The arduino is then connected to an mpu6050
-* `ConcurrentRotationSensor` - This type takes another rotation sensor and periodically updates it in the background. When requesting the roll and pitch, the most recent values will be returned. This means that your code does not have to wait for a sensor to be read, which can be an expensive operation.
+* `RawArduinoRotationSensor` - This connects to an arduino (or any device for that matter) over a serial connection. It reads raw data from that connection and fuses it into a quaternion. For the arduino sketch, look [here](github.com/JoshPattman/arduino-raw-mpu5060)
+> Note: `ArduinoRotationSensor` is deprecated as I could not find a fatal bug, and the new `RawArduinoRotationSensor` works just as well.
 ## Custom type implementations
 ### LegIK
 A `LegIK` controller describes a type that takes an input `(x,y,z)` in space relative to the leg, and returns a number of motor rotations. Some example coordinates:
@@ -115,6 +115,8 @@ type RotationSensor interface {
 	// This is called to calibrate the rotation sensor
 	// It should block until calibration is complete
 	Calibrate()
+	// Setup should be called after the sensor is loaded
+	Setup()
 }
 ```
 ## Differences to spotpuppy python
@@ -123,5 +125,4 @@ You may have noticed that this module shares its name with the `spotpuppy` pytho
 - LegIK interface. You can now write custom IK controllers for the legs which allow much easier integration with other leg designs
 - Simpler saving/loading. There is now one config file containing everything, with much more concise json
 - Faster performance. From some (not very in depth) tests, i think this package runs at least 50-100 times faster than the other code (this is not necessarily all pythons fault, and is partly due to the other package being bloated)
-- Concurrent rotation sensors. This module contains a type that wraps a rotation sensor with the ability to update in the background and not block whilst waiting to be read
 - More intuitive leg indexing. In this module, all legs are referred to by their name (a string), not with an index. This makes confusion less likely
