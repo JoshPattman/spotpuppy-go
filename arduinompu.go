@@ -65,7 +65,13 @@ func (a *ArduinoRotationSensor) GetQuaternion() Quat {
 
 func NewArduinoRotationSensor() *ArduinoRotationSensor {
 	return &ArduinoRotationSensor{
-		IsReady: false,
+		IsReady:  false,
+		PortName: "/dev/ttyUSB0",
+		Axes: AxesRemap{
+			X: "x",
+			Y: "y",
+			Z: "z",
+		},
 	}
 }
 
