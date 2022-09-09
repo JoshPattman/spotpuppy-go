@@ -7,6 +7,8 @@ type RotationSensor interface {
 	GetQuaternion() Quat
 	// Calibrate tells the rotation sensor to calibrate, then waits for the action to complete
 	Calibrate()
+	// Setup should be called after the sensor is loaded
+	Setup()
 }
 
 // DummyRotationSensor is a rotation sensor that does nothing
@@ -19,6 +21,11 @@ func (d *DummyRotationSensor) GetQuaternion() Quat {
 
 // Calibrate does nothing for DummyRotationSensor
 func (d *DummyRotationSensor) Calibrate() {
+
+}
+
+// Setup does nothing for DummyRotationSensor
+func (d *DummyRotationSensor) Setup() {
 
 }
 

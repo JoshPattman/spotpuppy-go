@@ -10,8 +10,9 @@ import (
 const DefaultPiUsbPort = "/dev/ttyUSB0"
 
 type ArduinoRotationSensor struct {
-	Port       *serial.Port `json:"port"`
+	Port       *serial.Port `json:"-"`
 	IsReady    bool         `json:"-"`
+	PortName   string       `json:"port_name"`
 	Axes       AxesRemap    `json:"axes_remap"`
 	parsedAxes []Axes
 }
@@ -62,21 +63,24 @@ func (a *ArduinoRotationSensor) GetQuaternion() Quat {
 	return NewQuat(w, x, y, z).RemapAxesFrom(a.parsedAxes[0], a.parsedAxes[1], a.parsedAxes[2])
 }
 
-func NewArduinoRotationSensor(portName string, remap AxesRemap) *ArduinoRotationSensor {
-	c := &serial.Config{Name: portName, Baud: 115200}
+func NewArduinoRotationSensor() *ArduinoRotationSensor {
+	return &ArduinoRotationSensor{
+		IsReady: false,
+	}
+}
+
+func (a *ArduinoRotationSensor) Setup() {
+	c := &serial.Config{Name: a.PortName, Baud: 115200}
 	s, err := serial.OpenPort(c)
 	if err != nil {
-		panic("Failed to connect to arduino on port " + portName)
+		panic("Failed to connect to arduino on port " + a.PortName)
 	}
 	s.Write([]byte{'r'})
 	waitForByte('R', s)
-	p := ParseAxesRemap(remap)
-	return &ArduinoRotationSensor{
-		Port:       s,
-		IsReady:    true,
-		Axes:       remap,
-		parsedAxes: p,
-	}
+	p := ParseAxesRemap(a.Axes)
+	a.parsedAxes = p
+	a.Port = s
+	a.IsReady = true
 }
 
 func (a *ArduinoRotationSensor) Calibrate() {
