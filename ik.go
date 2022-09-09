@@ -39,9 +39,9 @@ func (dm *DirectMotorIK) CalculateMotorRotations(pos Vec3) []float64 {
 	if dist >= 2*dm.BoneLength {
 		pos.Mul(1.999 * dm.BoneLength / dist)
 	}
-	kd := dm.kneeDegrees(dist)
-	hxd := (kd / 2) + dm.degreesBetween(pos.X, pos.Y)
-	hzd := dm.degreesBetween(pos.Z, pos.Y)
+	kd := dm.kneeDegrees(dist) - 90
+	hxd := (kd / 2) + dm.degreesBetween(pos.X, pos.Y) - 135
+	hzd := dm.degreesBetween(pos.Z, pos.Y) - 90
 	if dm.ReverseKneeJoint {
 		kd = -kd
 	}
@@ -54,7 +54,7 @@ func (dm *DirectMotorIK) CalculateMotorRotations(pos Vec3) []float64 {
 	kd += dm.KneeOffset
 	hxd += dm.HipXOffset
 	hzd += dm.HipZOffset
-	return []float64{clamp(hzd-90, -90, 90), clamp(hxd-135, -90, 90), clamp(kd-90, -90, 90)}
+	return []float64{clamp(hzd, -90, 90), clamp(hxd, -90, 90), clamp(kd, -90, 90)}
 }
 func clamp(x, mi, ma float64) float64 {
 	if x < mi {
