@@ -15,13 +15,16 @@ type rotationPacket struct {
 }
 
 type RawArduinoRotationSensor struct {
-	Port     *serial.Port `json:"-"`
-	IsReady  bool         `json:"-"`
-	PortName string       `json:"port_name"`
-	Axes     AxesRemap    `json:"axes_remap"`
+	Port               *serial.Port  `json:"-"`
+	IsReady            bool          `json:"-"`
+	PortName           string        `json:"port_name"`
+	Axes               *AxesRemapper `json:"axes_remap"`
+	ReverseGyroUp      bool          `json:"rev_gyro_up"`
+	ReverseGyroLeft    bool          `json:"rev_gyro_left"`
+	ReverseGyroForward bool          `json:"rev_gyro_forward"`
 	// How many degrees/second the accelerometer moves the rotation
-	AccSpeed    float64 `json:"acc_speed"`
-	parsedAxes  []Axes
+	AccSpeed float64 `json:"acc_speed"`
+	//parsedAxes  []Axes
 	calibration rotationPacket
 	cachedRot   Quat
 	stopFlag    bool
@@ -30,13 +33,9 @@ type RawArduinoRotationSensor struct {
 
 func NewRawArduinoRotationSensor() *RawArduinoRotationSensor {
 	return &RawArduinoRotationSensor{
-		IsReady:  false,
-		PortName: "/dev/ttyUSB0",
-		Axes: AxesRemap{
-			X: "x",
-			Y: "y",
-			Z: "z",
-		},
+		IsReady:   false,
+		PortName:  "/dev/ttyUSB0",
+		Axes:      NewAxesRemapper(Forward, Left, Up),
 		cachedRot: QuatIdentity,
 		AccSpeed:  45,
 	}
@@ -49,8 +48,8 @@ func (a *RawArduinoRotationSensor) Setup() {
 		panic("Failed to connect to arduino on port " + a.PortName)
 	}
 	s.Flush()
-	p := ParseAxesRemap(a.Axes)
-	a.parsedAxes = p
+	//p := ParseAxesRemap(a.Axes)
+	//a.parsedAxes = p
 	a.Port = s
 	go a.updateInBackground()
 	a.IsReady = true
@@ -80,20 +79,11 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 
 	// Read the rotation packet
 	d := rotationPacket{}
-	axTarget, ayTarget, azTarget := 0.0, 0.0, 0.0
-	switch a.Axes.Y {
-	case "x":
-		axTarget = 0.5
-	case "y":
-		ayTarget = 0.5
-	case "z":
-		azTarget = 0.5
-	}
 	for i := 0; i < 100; i++ {
 		d1 := a.readNextPacket()
-		d.accelX += d1.accelX - axTarget
-		d.accelY += d1.accelY - ayTarget
-		d.accelZ += d1.accelZ - azTarget
+		d.accelX += d1.accelX
+		d.accelY += d1.accelY + 0.5
+		d.accelZ += d1.accelZ
 		d.gyroX += d1.gyroX
 		d.gyroY += d1.gyroY
 		d.gyroZ += d1.gyroZ
@@ -112,10 +102,10 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 
 func (a *RawArduinoRotationSensor) GetQuaternion() Quat {
 	q := a.cachedRot
-	return q.RemapAxesFrom(a.parsedAxes[0], a.parsedAxes[1], a.parsedAxes[2])
+	return q
 }
 
-// Waits for then reads the next packet sent bu arduino
+// Waits for then reads the next packet sent bu arduino. Also converts the packet to spotpuppy coordinate system
 func (a *RawArduinoRotationSensor) readNextPacket() rotationPacket {
 	for {
 		buf := make([]byte, 1)
@@ -143,13 +133,24 @@ func (a *RawArduinoRotationSensor) readNextPacket() rotationPacket {
 		values := make([]float64, 6)
 		e := json.Unmarshal(msg, &values)
 		if e == nil && len(values) == 6 {
+			gyroData := a.Axes.Remap(NewVector3(values[0], values[1], values[2]))
+			accData := a.Axes.Remap(NewVector3(values[3], values[4], values[5]))
+			if a.ReverseGyroForward {
+				gyroData.X *= -1
+			}
+			if a.ReverseGyroUp {
+				gyroData.Y *= -1
+			}
+			if a.ReverseGyroLeft {
+				gyroData.Z *= -1
+			}
 			return rotationPacket{
-				gyroX:  values[0],
-				gyroY:  values[1],
-				gyroZ:  values[2],
-				accelX: values[3],
-				accelY: values[4],
-				accelZ: values[5],
+				gyroX:  gyroData.X,
+				gyroY:  gyroData.Y,
+				gyroZ:  gyroData.Z,
+				accelX: accData.X,
+				accelY: accData.Y,
+				accelZ: accData.Z,
 			}
 		}
 	}
@@ -195,8 +196,10 @@ func (a *RawArduinoRotationSensor) updateInBackground() {
 		}
 		// Calculate the rotation we need to follow to align with the acc
 		accelUp := NewVector3(p.accelX, p.accelY, p.accelZ).Unit()
+		h := orientation.HeadingAngle()
+		accelUp = accelUp.Rotated(NewQuatAngleAxis(Up, h))
 		// We apply to this vector as it is the up axis of the mpu
-		gyroUp := orientation.Apply(NewVector3(0, 0, 1))
+		gyroUp := orientation.Apply(Up)
 
 		// Add a small amount of accelerometer pull to the gyro (only if we are more that 3 degrees away). This should preserve the dimension that the accelerometer cannot measure
 		if accelUp.AngleTo(gyroUp) > 3 {

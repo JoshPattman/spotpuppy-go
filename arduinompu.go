@@ -60,7 +60,7 @@ func (a *ArduinoRotationSensor) GetQuaternion() Quat {
 	if err != nil {
 		panic("Invalid message received from arduino (could not parse float " + parts[3] + ")")
 	}
-	return NewQuat(w, x, y, z).RemapAxesFrom(a.parsedAxes[0], a.parsedAxes[1], a.parsedAxes[2])
+	return NewQuat(w, x, y, z) //.RemapAxesFrom(a.parsedAxes[0], a.parsedAxes[1], a.parsedAxes[2])
 }
 
 func NewArduinoRotationSensor() *ArduinoRotationSensor {

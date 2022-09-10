@@ -188,7 +188,7 @@ func (q Quat) flipAxis(a Axes) Quat {
 
 // RemapAxes takes a quaternion with axes x1, y1, z1 and remaps it to coordinate system where x1 y1 and z1 are the x y and z axes respectively.
 // For instance, to switch the x and z axes, and negate the y axis, call Quat.RemapAxesFrom(AxZ, -AxY, AxX)
-func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
+/*func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
 	changes := 0
 	if x1 < 0 {
 		x1 = -x1
@@ -210,6 +210,32 @@ func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
 		q2 = q2.Conj()
 	}
 	return q2
+}*/
+
+type AxesRemapper struct {
+	SrcForwardVector, SrcLeftVector, SrcUpVector          Vec3
+	TargetForwardVector, TargetLeftVector, TargetUpVector Vec3
+}
+
+func NewAxesRemapper(SrcForwardVector, SrcLeftVector, SrcUpVector Vec3) *AxesRemapper {
+	return &AxesRemapper{
+		SrcForwardVector, SrcLeftVector, SrcUpVector,
+		Forward, Left, Up,
+	}
+}
+
+func (a *AxesRemapper) Remap(v Vec3) Vec3 {
+	fwd := v.Dot(a.SrcForwardVector)
+	lft := v.Dot(a.SrcLeftVector)
+	up := v.Dot(a.SrcUpVector)
+	return a.TargetForwardVector.Mul(fwd).Add(a.TargetLeftVector.Mul(lft)).Add(a.TargetUpVector.Mul(up))
+}
+
+func (a *AxesRemapper) RemapInverse(v Vec3) Vec3 {
+	fwd := v.Dot(a.TargetForwardVector)
+	lft := v.Dot(a.TargetLeftVector)
+	up := v.Dot(a.TargetUpVector)
+	return a.SrcForwardVector.Mul(fwd).Add(a.SrcLeftVector.Mul(lft)).Add(a.SrcUpVector.Mul(up))
 }
 
 type AxesRemap struct {

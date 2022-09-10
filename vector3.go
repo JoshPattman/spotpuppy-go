@@ -39,6 +39,10 @@ func NewVector3(x, y, z float64) Vec3 {
 		Z: z,
 	}
 }
+
+func V3(x, y, z float64) Vec3 {
+	return NewVector3(x, y, z)
+}
 func CopyVector3(v Vec3) Vec3 {
 	return Vec3{
 		X: v.X,
@@ -119,6 +123,19 @@ func (v Vec3) ProjectToPlane(normal Vec3) Vec3 {
 	d := v.Dot(normal) / normal.Len()
 	p := normal.Unit().Mul(d)
 	return v.Sub(p)
+}
+
+func (v Vec3) Remap(axs []Axes) Vec3 {
+	vL := []float64{v.X, v.Y, v.Z}
+	v2L := []float64{0, 0, 0}
+	for i := range axs {
+		if axs[i] < 0 {
+			v2L[i] = -vL[-axs[i]-1]
+		} else {
+			v2L[i] = vL[axs[i]-1]
+		}
+	}
+	return Vec3{v2L[0], v2L[1], v2L[2]}
 }
 
 func (v Vec3) String() string {
