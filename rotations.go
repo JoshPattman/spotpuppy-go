@@ -32,6 +32,12 @@ func NewQuatAngleAxis(v Vec3, a float64) Quat {
 	return NewQuat(w, x, y, z).Unit()
 }
 
+func NewQuatFromTo(v1, v2 Vec3) Quat {
+	axis := v1.Cross(v2)
+	angle := v1.AngleTo(v2)
+	return NewQuatAngleAxis(axis, angle)
+}
+
 // Quat represents a quaternion W+X*i+Y*j+Z*k
 type Quat struct {
 	W float64 // Scalar component

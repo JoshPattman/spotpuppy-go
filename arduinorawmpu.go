@@ -15,10 +15,12 @@ type rotationPacket struct {
 }
 
 type RawArduinoRotationSensor struct {
-	Port        *serial.Port `json:"-"`
-	IsReady     bool         `json:"-"`
-	PortName    string       `json:"port_name"`
-	Axes        AxesRemap    `json:"axes_remap"`
+	Port     *serial.Port `json:"-"`
+	IsReady  bool         `json:"-"`
+	PortName string       `json:"port_name"`
+	Axes     AxesRemap    `json:"axes_remap"`
+	// How many degrees/second the accelerometer moves the rotation
+	AccSpeed    float64 `json:"acc_speed"`
 	parsedAxes  []Axes
 	calibration rotationPacket
 	cachedRot   Quat
@@ -36,6 +38,7 @@ func NewRawArduinoRotationSensor() *RawArduinoRotationSensor {
 			Z: "z",
 		},
 		cachedRot: QuatIdentity,
+		AccSpeed:  45,
 	}
 }
 
@@ -77,11 +80,20 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 
 	// Read the rotation packet
 	d := rotationPacket{}
+	axTarget, ayTarget, azTarget := 0.0, 0.0, 0.0
+	switch a.Axes.Y {
+	case "x":
+		axTarget = 0.5
+	case "y":
+		ayTarget = 0.5
+	case "z":
+		azTarget = 0.5
+	}
 	for i := 0; i < 100; i++ {
 		d1 := a.readNextPacket()
-		d.accelX += d1.accelX
-		d.accelY += d1.accelY
-		d.accelZ += d1.accelZ
+		d.accelX += d1.accelX - axTarget
+		d.accelY += d1.accelY - ayTarget
+		d.accelZ += d1.accelZ - azTarget
 		d.gyroX += d1.gyroX
 		d.gyroY += d1.gyroY
 		d.gyroZ += d1.gyroZ
@@ -173,13 +185,23 @@ func (a *RawArduinoRotationSensor) updateInBackground() {
 		// Copy the current cached rotation so we can do calculations on it
 		orientation := a.cachedRot
 
-		// Calculate and update quaternion based on gyro
+		// Calculate update quaternion based on gyro
 		rawGyroVec := NewVector3(p.gyroX, p.gyroY, p.gyroZ)
 		gyroAngle := rawGyroVec.Len()
 		if gyroAngle != 0 {
 			gyroAxis := rawGyroVec.Unit()
-			q := NewQuatAngleAxis(gyroAxis, gyroAngle*dt.Seconds())
+			q := NewQuatAngleAxis(gyroAxis, -gyroAngle*dt.Seconds())
 			orientation = orientation.RotateByLocal(q)
+		}
+		// Calculate the rotation we need to follow to align with the acc
+		accelUp := NewVector3(p.accelX, p.accelY, p.accelZ).Unit()
+		// We apply to this vector as it is the up axis of the mpu
+		gyroUp := orientation.Apply(NewVector3(0, 0, 1))
+
+		// Add a small amount of accelerometer pull to the gyro (only if we are more that 3 degrees away). This should preserve the dimension that the accelerometer cannot measure
+		if accelUp.AngleTo(gyroUp) > 3 {
+			q := NewQuatFromTo(gyroUp, accelUp)
+			orientation = orientation.RotateByGlobal(NewQuatAngleAxis(NewVector3(q.X, q.Y, q.Z), a.AccSpeed*dt.Seconds()))
 		}
 		a.cachedRot = orientation
 	}

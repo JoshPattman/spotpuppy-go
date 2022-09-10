@@ -97,8 +97,8 @@ func (v Vec3) Inv() Vec3 {
 func (v Vec3) Dot(v2 Vec3) float64 {
 	return (v.X * v2.X) + (v.Y * v2.Y) + (v.Z * v2.Z)
 }
-func (v Vec3) Cross(v2 Vec3) *Vec3 {
-	return &Vec3{
+func (v Vec3) Cross(v2 Vec3) Vec3 {
+	return Vec3{
 		v.Y*v2.Z - v.Z*v2.Y,
 		v.Z*v2.X - v.X*v2.Z,
 		v.X*v2.Y - v.Y*v2.X,
