@@ -82,6 +82,7 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 	for i := 0; i < 100; i++ {
 		d1 := a.readNextPacket()
 		d.accelX += d1.accelX
+		// We add 0.5 here as you should take away the maximum force in the direction of u = -1*-0.5 = +0.5
 		d.accelY += d1.accelY + 0.5
 		d.accelZ += d1.accelZ
 		d.gyroX += d1.gyroX
@@ -196,14 +197,13 @@ func (a *RawArduinoRotationSensor) updateInBackground() {
 		}
 		// Calculate the rotation we need to follow to align with the acc
 		accelUp := NewVector3(p.accelX, p.accelY, p.accelZ).Unit()
-		h := orientation.HeadingAngle()
-		accelUp = accelUp.Rotated(NewQuatAngleAxis(Up, h))
-		// We apply to this vector as it is the up axis of the mpu
-		gyroUp := orientation.Apply(Up)
+		// Here we rotate the accel vector to line up with the current predicted orientation. If the orientation was correct, this rotated vector would now be equal to Up
+		accelUp = accelUp.Rotated(orientation)
+		gyroUp := Up
 
 		// Add a small amount of accelerometer pull to the gyro (only if we are more that 3 degrees away). This should preserve the dimension that the accelerometer cannot measure
 		if accelUp.AngleTo(gyroUp) > 3 {
-			q := NewQuatFromTo(gyroUp, accelUp)
+			q := NewQuatFromTo(accelUp, gyroUp)
 			orientation = orientation.RotateByGlobal(NewQuatAngleAxis(NewVector3(q.X, q.Y, q.Z), a.AccSpeed*dt.Seconds()))
 		}
 		a.cachedRot = orientation
