@@ -128,14 +128,14 @@ func (a Quat) RotateByGlobal(b Quat) Quat {
 }
 
 // NoYaw removes the global yaw component of this quaternion.
-// Use this to take a quaternion in global space and make it useful for robot calculations
+// Use this to take a quaternion in global space and make it useful for robot calculations. This suffers from gimbal lock
 func (q Quat) NoYaw() Quat {
 	heading := q.HeadingAngle()
 	correction := NewQuatAngleAxis(Up, heading).Inv()
 	return q.RotateByGlobal(correction)
 }
 
-// Returns the heading angle of this quaternion in degrees. Suffers from gimbal lock
+// Returns the heading angle of this quaternion in degrees. This suffers from gimbal lock
 func (q Quat) HeadingAngle() float64 {
 	fwdDir := Forward.Rotated(q).ProjectToPlane(Up)
 	// Ensure that the forward direction is not pointing straight up
@@ -151,79 +151,26 @@ func (q Quat) String() string {
 	return fmt.Sprintf("(w%.2f,x%.2f,y%.2f,z%.2f)", q.W, q.X, q.Y, q.Z)
 }
 
-type Axes int
-
-const (
-	AxX Axes = 1
-	AxY Axes = 2
-	AxZ Axes = 3
-)
-
-func (q Quat) getAxis(a Axes) float64 {
-	switch a {
-	case AxX:
-		return q.X
-	case AxY:
-		return q.Y
-	case AxZ:
-		return q.Z
-	}
-	return 0
-}
-
-func (q Quat) flipAxis(a Axes) Quat {
-	switch a {
-	case AxX:
-		q.X = -q.X
-		return q
-	case AxY:
-		q.Y = -q.Y
-		return q
-	case AxZ:
-		q.Z = -q.Z
-		return q
-	}
-	return QuatIdentity
-}
-
-// RemapAxes takes a quaternion with axes x1, y1, z1 and remaps it to coordinate system where x1 y1 and z1 are the x y and z axes respectively.
-// For instance, to switch the x and z axes, and negate the y axis, call Quat.RemapAxesFrom(AxZ, -AxY, AxX)
-/*func (q Quat) RemapAxesFrom(x1, y1, z1 Axes) Quat {
-	changes := 0
-	if x1 < 0 {
-		x1 = -x1
-		q = q.flipAxis(x1)
-		changes++
-	}
-	if y1 < 0 {
-		y1 = -y1
-		q = q.flipAxis(y1)
-		changes++
-	}
-	if z1 < 0 {
-		z1 = -z1
-		q = q.flipAxis(z1)
-		changes++
-	}
-	q2 := Quat{q.W, q.getAxis(x1), q.getAxis(y1), q.getAxis(z1)}
-	if changes%2 != 0 {
-		q2 = q2.Conj()
-	}
-	return q2
-}*/
-
+// AxesRemapper allows remapping of vectors from one axis space to another
 type AxesRemapper struct {
-	SrcForwardVector, SrcLeftVector, SrcUpVector          Vec3
-	TargetForwardVector, TargetLeftVector, TargetUpVector Vec3
+	SrcForwardVector Vec3 `json:"src-forward"`
+	SrcUpVector      Vec3 `json:"src-up"`
+	SrcLeftVector    Vec3 `json:"src-left"`
+
+	TargetForwardVector Vec3 `json:"target-forward"`
+	TargetUpVector      Vec3 `json:"target-up"`
+	TargetLeftVector    Vec3 `json:"target-left"`
 }
 
-func NewAxesRemapper(SrcForwardVector, SrcLeftVector, SrcUpVector Vec3) *AxesRemapper {
+// Returns an AxesRemapper with source vectors forward, up, and left. These are the vectors that represent the axes in the system we will convert from. By default, the target axes are spotpuppy Forward, Up, Left
+func NewAxesRemapper(SrcForwardVector, SrcUpVector, SrcLeftVector Vec3) *AxesRemapper {
 	return &AxesRemapper{
-		SrcForwardVector, SrcLeftVector, SrcUpVector,
-		Forward, Left, Up,
+		SrcForwardVector, SrcUpVector, SrcLeftVector,
+		Forward, Up, Left,
 	}
 }
 
+// Remap the vector from coordinate system with Src axes to coordinate system with Target axes, whilst keeping the meaning of the vector
 func (a *AxesRemapper) Remap(v Vec3) Vec3 {
 	fwd := v.Dot(a.SrcForwardVector)
 	lft := v.Dot(a.SrcLeftVector)
@@ -231,50 +178,12 @@ func (a *AxesRemapper) Remap(v Vec3) Vec3 {
 	return a.TargetForwardVector.Mul(fwd).Add(a.TargetLeftVector.Mul(lft)).Add(a.TargetUpVector.Mul(up))
 }
 
+// Remap the vector from coordinate system with Target axes to coordinate system with Src axes, whilst keeping the meaning of the vector
 func (a *AxesRemapper) RemapInverse(v Vec3) Vec3 {
 	fwd := v.Dot(a.TargetForwardVector)
 	lft := v.Dot(a.TargetLeftVector)
 	up := v.Dot(a.TargetUpVector)
 	return a.SrcForwardVector.Mul(fwd).Add(a.SrcLeftVector.Mul(lft)).Add(a.SrcUpVector.Mul(up))
-}
-
-type AxesRemap struct {
-	X string `json:"x"`
-	Y string `json:"y"`
-	Z string `json:"z"`
-}
-
-func parseAxes(ax string) Axes {
-	sign := ""
-	if len(ax) == 2 {
-		sign = ax[0:1]
-		ax = ax[1:]
-	}
-	if len(ax) != 1 {
-		panic("Cannot parse axes, not in correct format")
-	}
-	signInt := Axes(1)
-	if sign == "-" {
-		signInt = -1
-	}
-	switch ax {
-	case "x":
-		return AxX * signInt
-	case "y":
-		return AxY * signInt
-	case "z":
-		return AxZ * signInt
-	}
-	panic("Cannot parse axes, not in correct format")
-}
-
-// ParseAxesRemap parses an AxesRemap struct to a list of axes for use with qauternion remapping. each field is in the form "x" (positive x) "-y" (negative y)
-func ParseAxesRemap(ar AxesRemap) []Axes {
-	ax := make([]Axes, 3)
-	ax[0] = parseAxes(ar.X)
-	ax[1] = parseAxes(ar.Y)
-	ax[2] = parseAxes(ar.Z)
-	return ax
 }
 
 /*

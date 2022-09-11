@@ -22,25 +22,26 @@ type RawArduinoRotationSensor struct {
 	ReverseGyroUp      bool          `json:"rev_gyro_up"`
 	ReverseGyroLeft    bool          `json:"rev_gyro_left"`
 	ReverseGyroForward bool          `json:"rev_gyro_forward"`
-	// How many degrees/second the accelerometer moves the rotation
-	AccSpeed float64 `json:"acc_speed"`
-	//parsedAxes  []Axes
+	// Maximum number of deg/s the accelerometer can move the rotation
+	AccSpeed    float64 `json:"acc_speed"`
 	calibration rotationPacket
 	cachedRot   Quat
 	stopFlag    bool
 	stoppedFlag bool
 }
 
+// Creates a new sensor instance. Does not connect to the arduino yet, that is done from Setup()
 func NewRawArduinoRotationSensor() *RawArduinoRotationSensor {
 	return &RawArduinoRotationSensor{
 		IsReady:   false,
 		PortName:  "/dev/ttyUSB0",
 		Axes:      NewAxesRemapper(Forward, Left, Up),
 		cachedRot: QuatIdentity,
-		AccSpeed:  45,
+		AccSpeed:  180,
 	}
 }
 
+// Sets up and connects to the arduino
 func (a *RawArduinoRotationSensor) Setup() {
 	c := &serial.Config{Name: a.PortName, Baud: 115200}
 	s, err := serial.OpenPort(c)
@@ -48,13 +49,12 @@ func (a *RawArduinoRotationSensor) Setup() {
 		panic("Failed to connect to arduino on port " + a.PortName)
 	}
 	s.Flush()
-	//p := ParseAxesRemap(a.Axes)
-	//a.parsedAxes = p
 	a.Port = s
 	go a.updateInBackground()
 	a.IsReady = true
 }
 
+// Restarts the updating in background thread
 func (a *RawArduinoRotationSensor) Restart() {
 	// Wait for update thread to stop
 	a.stoppedFlag = false
@@ -66,6 +66,7 @@ func (a *RawArduinoRotationSensor) Restart() {
 	go a.updateInBackground()
 }
 
+// Calibrates the sensors accelerometer and gyro. Ensure the sensor is very flat for this
 func (a *RawArduinoRotationSensor) Calibrate() {
 	if !a.IsReady {
 		panic("Rotation sensor wasn't ready")
@@ -80,7 +81,7 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 	// Read the rotation packet
 	d := rotationPacket{}
 	for i := 0; i < 100; i++ {
-		d1 := a.readNextPacket()
+		d1 := a.parseNextPacket()
 		d.accelX += d1.accelX
 		// We add 0.5 here as you should take away the maximum force in the direction of u = -1*-0.5 = +0.5
 		d.accelY += d1.accelY + 0.5
@@ -101,13 +102,69 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 	go a.updateInBackground()
 }
 
+// Returns the last measured rotation of the sensor. Non blocking
 func (a *RawArduinoRotationSensor) GetQuaternion() Quat {
-	q := a.cachedRot
-	return q
+	return a.cachedRot
 }
 
-// Waits for then reads the next packet sent bu arduino. Also converts the packet to spotpuppy coordinate system
-func (a *RawArduinoRotationSensor) readNextPacket() rotationPacket {
+// This runs constantly in the background so that the update loop always gets the most up to dat info without having to wait
+func (a *RawArduinoRotationSensor) updateInBackground() {
+	lastUpdate := time.Now()
+	// Clean out any old data sat in the port
+	a.Port.Flush()
+	a.cachedRot = QuatIdentity
+	for {
+		// Check if we need to stop
+		if a.stopFlag {
+			a.stopFlag = false
+			a.stoppedFlag = true
+			return
+		}
+
+		// Time managment
+		thisUpdate := time.Now()
+		dt := thisUpdate.Sub(lastUpdate)
+		lastUpdate = thisUpdate
+
+		// Read the serial
+		p := a.parseNextPacket()
+
+		// Remove the calibration offsets
+		p.accelX -= a.calibration.accelX
+		p.accelY -= a.calibration.accelY
+		p.accelZ -= a.calibration.accelZ
+		p.gyroX -= a.calibration.gyroX
+		p.gyroY -= a.calibration.gyroY
+		p.gyroZ -= a.calibration.gyroZ
+
+		// Copy the current cached rotation so we can do calculations on it
+		orientation := a.cachedRot
+
+		// Calculate update quaternion based on gyro
+		rawGyroVec := NewVector3(p.gyroX, p.gyroY, p.gyroZ)
+		gyroAngle := rawGyroVec.Len()
+		if gyroAngle != 0 {
+			gyroAxis := rawGyroVec.Unit()
+			q := NewQuatAngleAxis(gyroAxis, -gyroAngle*dt.Seconds())
+			orientation = orientation.RotateByLocal(q)
+		}
+
+		// Calculate the vector relative to our current orientation that points at true Up (accel)
+		accelUp := NewVector3(p.accelX, p.accelY, p.accelZ).Unit().Rotated(orientation)
+		orientationUp := Up
+
+		// Calculate the quaternion we need to rotate by to move towards our true rotation,  then apply it
+		q := NewQuatFromTo(accelUp, orientationUp)
+		angleMult := accelUp.AngleTo(orientationUp) / 180.0
+		orientation = orientation.RotateByGlobal(NewQuatAngleAxis(NewVector3(q.X, q.Y, q.Z), a.AccSpeed*dt.Seconds()*angleMult))
+
+		// Copy our new rotation back to the cachedRot
+		a.cachedRot = orientation
+	}
+}
+
+// Waits for then reads and parses the next packet sent by arduino. Then converts the packet to spotpuppy coordinate system and reverses gyros is need be
+func (a *RawArduinoRotationSensor) parseNextPacket() rotationPacket {
 	for {
 		buf := make([]byte, 1)
 		msg := make([]byte, 0)
@@ -154,58 +211,5 @@ func (a *RawArduinoRotationSensor) readNextPacket() rotationPacket {
 				accelZ: accData.Z,
 			}
 		}
-	}
-}
-
-// This runs constantly in the background so that the update loop always gets the most up to dat info without having to wait
-func (a *RawArduinoRotationSensor) updateInBackground() {
-	lastUpdate := time.Now()
-	for {
-		// Check if we need to stop
-		if a.stopFlag {
-			a.stopFlag = false
-			a.stoppedFlag = true
-			return
-		}
-
-		// Time managment
-		thisUpdate := time.Now()
-		dt := thisUpdate.Sub(lastUpdate)
-		lastUpdate = thisUpdate
-
-		// Read the serial
-		p := a.readNextPacket()
-
-		// Remove the calibration offsets
-		p.accelX -= a.calibration.accelX
-		p.accelY -= a.calibration.accelY
-		p.accelZ -= a.calibration.accelZ
-		p.gyroX -= a.calibration.gyroX
-		p.gyroY -= a.calibration.gyroY
-		p.gyroZ -= a.calibration.gyroZ
-
-		// Copy the current cached rotation so we can do calculations on it
-		orientation := a.cachedRot
-
-		// Calculate update quaternion based on gyro
-		rawGyroVec := NewVector3(p.gyroX, p.gyroY, p.gyroZ)
-		gyroAngle := rawGyroVec.Len()
-		if gyroAngle != 0 {
-			gyroAxis := rawGyroVec.Unit()
-			q := NewQuatAngleAxis(gyroAxis, -gyroAngle*dt.Seconds())
-			orientation = orientation.RotateByLocal(q)
-		}
-		// Calculate the rotation we need to follow to align with the acc
-		accelUp := NewVector3(p.accelX, p.accelY, p.accelZ).Unit()
-		// Here we rotate the accel vector to line up with the current predicted orientation. If the orientation was correct, this rotated vector would now be equal to Up
-		accelUp = accelUp.Rotated(orientation)
-		gyroUp := Up
-
-		// Add a small amount of accelerometer pull to the gyro (only if we are more that 3 degrees away). This should preserve the dimension that the accelerometer cannot measure
-		if accelUp.AngleTo(gyroUp) > 3 {
-			q := NewQuatFromTo(accelUp, gyroUp)
-			orientation = orientation.RotateByGlobal(NewQuatAngleAxis(NewVector3(q.X, q.Y, q.Z), a.AccSpeed*dt.Seconds()))
-		}
-		a.cachedRot = orientation
 	}
 }
