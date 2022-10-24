@@ -1,10 +1,12 @@
 package spotpuppy
 
+import m3 "github.com/JoshPattman/math3d"
+
 // RotationSensor is an interface for getting the roll and pitch from a gyroscope/accelerometer
 type RotationSensor interface {
 	// GetQuaternion returns the quaternion rotation in global space of this sensor.
 	// It can also have y axis rotation, which can be cancelled out easily later to get roll and pitch.
-	GetQuaternion() Quat
+	GetQuaternion() m3.Quat
 	// Calibrate tells the rotation sensor to calibrate, then waits for the action to complete
 	Calibrate()
 	// Setup should be called after the sensor is loaded
@@ -15,8 +17,8 @@ type RotationSensor interface {
 type DummyRotationSensor struct{}
 
 // GetQuaternion returns identity for DummyRotationSensor
-func (d *DummyRotationSensor) GetQuaternion() Quat {
-	return QuatIdentity
+func (d *DummyRotationSensor) GetQuaternion() m3.Quat {
+	return m3.QIdentity
 }
 
 // Calibrate does nothing for DummyRotationSensor

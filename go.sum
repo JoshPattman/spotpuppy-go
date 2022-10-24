@@ -1,3 +1,5 @@
+github.com/JoshPattman/math3d v1.0.1 h1:lxhlPROVhWu8BzjBsfUn7KUo7teBLg+e6pt2RPQ7JEc=
+github.com/JoshPattman/math3d v1.0.1/go.mod h1:/iLM91Tp4rNdi09QCuQejqAbFak/Rc1BeGEbnJ6CMWU=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/googolgl/go-i2c v0.0.5/go.mod h1:ZAqTSwjnPXqglNaEixRmgAUatGpTMm0xyJp/wK6ZDgk=
@@ -15,8 +17,6 @@ github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
-github.com/westphae/quaternion v0.0.0-20210908005042-fa06d546065c h1:IxoxQQ3RVVii9zMCzUDWL4RZ5HOW1u6VmVGMm3nx6Rc=
-github.com/westphae/quaternion v0.0.0-20210908005042-fa06d546065c/go.mod h1:MbIXKXI9LGjgzStrcPZ2teUcfc/1++c7vyCWPg0xvZU=
 golang.org/x/sys v0.0.0-20190422165155-953cdadca894/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191026070338-33540a1f6037/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20211015200801-69063c4bb744 h1:KzbpndAYEM+4oHRp9JmB2ewj0NHHxO3Z0g7Gus2O1kk=

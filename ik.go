@@ -3,6 +3,8 @@ package spotpuppy
 import (
 	"encoding/json"
 	"math"
+
+	m3 "github.com/JoshPattman/math3d"
 )
 
 // LegIK describes types that can calculate motor rotations from a foot endpoint
@@ -10,11 +12,11 @@ type LegIK interface {
 	// CalculateMotorRotations gets a list of motor rotations from a foot position relative to this leg.
 	// The returned servo positions should be in the same order as GetMotorNames
 	// (ie the first value of the rotations should be for the first servo name returned by GetMotorNames)
-	CalculateMotorRotations(vector Vec3) []float64
+	CalculateMotorRotations(vector m3.Vec3) []float64
 	// GetMotorNames returns a list of the motor names of this leg. See CalculateMotorRotations for more info
 	GetMotorNames() []string
 	// GetRestingPosition returns the position of the foot of this leg such that the motor rotations are all 0
-	GetRestingPosition() Vec3
+	GetRestingPosition() m3.Vec3
 	// LoadJson loads the json data into this object
 	LoadJson(data []byte) error
 }
@@ -34,7 +36,7 @@ type DirectMotorIK struct {
 }
 
 // CalculateMotorRotations calculates the rotations of the three motors, and returns them in the order (hip left right, hip forwards backwords, knee)
-func (dm *DirectMotorIK) CalculateMotorRotations(pos Vec3) []float64 {
+func (dm *DirectMotorIK) CalculateMotorRotations(pos m3.Vec3) []float64 {
 	if dm.FlipXAxis {
 		pos.X = -pos.X
 	}
@@ -94,8 +96,8 @@ func (dm *DirectMotorIK) GetMotorNames() []string {
 }
 
 // GetRestingPosition returns the position where all of the joints are at 0 degrees
-func (dm *DirectMotorIK) GetRestingPosition() Vec3 {
-	return NewVector3(0, math.Sqrt(math.Pow(dm.BoneLength, 2)*2), 0)
+func (dm *DirectMotorIK) GetRestingPosition() m3.Vec3 {
+	return m3.V(0, math.Sqrt(math.Pow(dm.BoneLength, 2)*2), 0)
 }
 
 // Loads json data into this object

@@ -5,6 +5,7 @@ go 1.17
 require github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 
 require (
+	github.com/JoshPattman/math3d v1.0.1
 	github.com/googolgl/go-i2c v0.1.1
 	github.com/googolgl/go-pca9685 v0.1.5
 )

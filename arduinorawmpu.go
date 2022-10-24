@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/tarm/serial"
+
+	m3 "github.com/JoshPattman/math3d"
 )
 
 type rotationPacket struct {
@@ -25,7 +27,7 @@ type RawArduinoRotationSensor struct {
 	// Maximum number of deg/s the accelerometer can move the rotation
 	AccSpeed    float64 `json:"acc_speed"`
 	calibration rotationPacket
-	cachedRot   Quat
+	cachedRot   m3.Quat
 	stopFlag    bool
 	stoppedFlag bool
 }
@@ -36,7 +38,7 @@ func NewRawArduinoRotationSensor() *RawArduinoRotationSensor {
 		IsReady:   false,
 		PortName:  "/dev/ttyUSB0",
 		Axes:      NewAxesRemapper(Forward, Left, Up),
-		cachedRot: QuatIdentity,
+		cachedRot: m3.QIdentity,
 		AccSpeed:  180,
 	}
 }
@@ -103,7 +105,7 @@ func (a *RawArduinoRotationSensor) Calibrate() {
 }
 
 // Returns the last measured rotation of the sensor. Non blocking
-func (a *RawArduinoRotationSensor) GetQuaternion() Quat {
+func (a *RawArduinoRotationSensor) GetQuaternion() m3.Quat {
 	return a.cachedRot
 }
 
@@ -112,7 +114,7 @@ func (a *RawArduinoRotationSensor) updateInBackground() {
 	lastUpdate := time.Now()
 	// Clean out any old data sat in the port
 	a.Port.Flush()
-	a.cachedRot = QuatIdentity
+	a.cachedRot = m3.QIdentity
 	for {
 		// Check if we need to stop
 		if a.stopFlag {
@@ -141,22 +143,22 @@ func (a *RawArduinoRotationSensor) updateInBackground() {
 		orientation := a.cachedRot
 
 		// Calculate update quaternion based on gyro
-		rawGyroVec := NewVector3(p.gyroX, p.gyroY, p.gyroZ)
+		rawGyroVec := m3.V(p.gyroX, p.gyroY, p.gyroZ)
 		gyroAngle := rawGyroVec.Len()
 		if gyroAngle != 0 {
 			gyroAxis := rawGyroVec.Unit()
-			q := NewQuatAngleAxis(gyroAxis, -gyroAngle*dt.Seconds())
+			q := m3.QAxisAngle(gyroAxis, m3.Degrees(-gyroAngle*dt.Seconds()))
 			orientation = orientation.RotateByLocal(q)
 		}
 
 		// Calculate the vector relative to our current orientation that points at true Up (accel)
-		accelUp := NewVector3(p.accelX, p.accelY, p.accelZ).Unit().Rotated(orientation)
+		accelUp := m3.V(p.accelX, p.accelY, p.accelZ).Unit().Rotated(orientation)
 		orientationUp := Up
 
 		// Calculate the quaternion we need to rotate by to move towards our true rotation,  then apply it
-		q := NewQuatFromTo(accelUp, orientationUp)
-		angleMult := accelUp.AngleTo(orientationUp) / 180.0
-		orientation = orientation.RotateByGlobal(NewQuatAngleAxis(NewVector3(q.X, q.Y, q.Z), a.AccSpeed*dt.Seconds()*angleMult))
+		q := m3.QFromTo(accelUp, orientationUp)
+		angleMult := accelUp.AngleTo(orientationUp).Degrees() / 180.0
+		orientation = orientation.RotateByGlobal(m3.QAxisAngle(m3.V(q.X, q.Y, q.Z), m3.Degrees(a.AccSpeed*dt.Seconds()*angleMult)))
 
 		// Copy our new rotation back to the cachedRot
 		a.cachedRot = orientation
@@ -191,8 +193,8 @@ func (a *RawArduinoRotationSensor) parseNextPacket() rotationPacket {
 		values := make([]float64, 6)
 		e := json.Unmarshal(msg, &values)
 		if e == nil && len(values) == 6 {
-			gyroData := a.Axes.Remap(NewVector3(values[0], values[1], values[2]))
-			accData := a.Axes.Remap(NewVector3(values[3], values[4], values[5]))
+			gyroData := a.Axes.Remap(m3.V(values[0], values[1], values[2]))
+			accData := a.Axes.Remap(m3.V(values[3], values[4], values[5]))
 			if a.ReverseGyroForward {
 				gyroData.X *= -1
 			}

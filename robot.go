@@ -3,6 +3,8 @@ package spotpuppy
 import (
 	"encoding/json"
 	"os"
+
+	m3 "github.com/JoshPattman/math3d"
 )
 
 const LegFrontLeft = "front_left"
@@ -21,23 +23,23 @@ type Quadruped struct {
 	MotorController    MotorController `json:"motor_controller"`
 	BodyDimensionX     float64         `json:"body_dimension_x"`
 	BodyDimensionZ     float64         `json:"body_dimension_z"`
-	cachedLegPositions map[string]Vec3
+	cachedLegPositions map[string]m3.Vec3
 	cachedLegRotations map[string][]float64
 }
 
-// ShoulderVec gets the Vec3 between the robots center and the shoulder joint of the leg specified
-func (q *Quadruped) ShoulderVec(leg string) Vec3 {
+// ShoulderVec gets the m3.Vec3 between the robots center and the shoulder joint of the leg specified
+func (q *Quadruped) ShoulderVec(leg string) m3.Vec3 {
 	switch leg {
 	case LegFrontLeft:
-		return NewVector3(q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
+		return m3.V(q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
 	case LegFrontRight:
-		return NewVector3(q.BodyDimensionX/2, 0, -q.BodyDimensionZ/2)
+		return m3.V(q.BodyDimensionX/2, 0, -q.BodyDimensionZ/2)
 	case LegBackLeft:
-		return NewVector3(-q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
+		return m3.V(-q.BodyDimensionX/2, 0, q.BodyDimensionZ/2)
 	case LegBackRight:
-		return NewVector3(-q.BodyDimensionX/2, 0, -q.BodyDimensionZ/2)
+		return m3.V(-q.BodyDimensionX/2, 0, -q.BodyDimensionZ/2)
 	default:
-		return NewVector3(0, 0, 0)
+		return m3.V(0, 0, 0)
 	}
 }
 
@@ -51,7 +53,7 @@ func NewQuadruped(newIK func() LegIK, motorController MotorController) *Quadrupe
 // No objects in the robot will be set up correctly, and it is recommended that a file load is performed before anything else
 func NewQuadrupedWithExtraMotors(newIK func() LegIK, motorController MotorController, extraMotors []string) *Quadruped {
 	iks := make(map[string]LegIK)
-	cachedLegPositions := make(map[string]Vec3, 4)
+	cachedLegPositions := make(map[string]m3.Vec3, 4)
 	for _, l := range AllLegs {
 		iks[l] = newIK()
 		cachedLegPositions[l] = iks[l].GetRestingPosition()
@@ -120,7 +122,7 @@ func (l *legs) UnmarshalJSON(data []byte) error {
 }
 
 // SetLegPosition sets a legs position for the next update call. It does not perform any calculations or movement immediately.
-func (q *Quadruped) SetLegPosition(leg string, pos Vec3) {
+func (q *Quadruped) SetLegPosition(leg string, pos m3.Vec3) {
 	q.cachedLegPositions[leg] = pos
 }
 
